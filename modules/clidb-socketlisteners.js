@@ -1,10 +1,21 @@
 module.exports.connect = function(namespace, redis, socket) {
 
 	socket.on('clidb.getschema', function(id) {
+		/*
 		if (!id) id = 'root';
-		redis.hget(namespace+'clidb:schema', id, function(err,schema) {
+		redis.hget(namespace+':clidb:schema', id, function(err,schema) {
 			socket.emit('clidb.schema',schema);
 		});
+		*/
+		if (!id) redis.hgetall(namespace+':clidb:schema',function(err, schemas) {
+			for (var key in schemas) {
+				socket.emit('clidb.schema', key, schemas[key]);
+			}
+		});
+		else redis.hget(namespace+':clidb:schema', id, function(err, schema) {
+			socket.emit('clidb.schema', id, schema);
+		});
+
 	});
 
 	socket.on('clidb.setschema', function() {

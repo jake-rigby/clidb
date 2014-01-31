@@ -4,7 +4,8 @@ module.exports = function(namespace, redis, schemas, cb) {
 		var obj = schemas[s];
 		if (!obj.id || !obj.$schema) continue;
 		var id = obj.id.substring(1);
-		m.hset(namespace+'clidb:schema', id, JSON.stringify(obj));
+		m.hset(namespace+':clidb:schema', id, JSON.stringify(obj));
+		console.log('clidb-builder <-- ',id);
 	}
 	m.exec(function(err,replies) {
 		if (cb) cb();

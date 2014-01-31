@@ -3,7 +3,7 @@
 angular.module('clidb',[])
 
 .factory('db', ['$rootScope', 'socket.io', function($rootScope, socketio) {
-
+	
 	var schema = {};
 	var service = { data: {}};
 
@@ -72,13 +72,14 @@ angular.module('clidb',[])
 	});
 
 
-	socketio.on('clidb.schema',function(data){
-		service.setSchema(JSON.parse(data));
+	socketio.on('clidb.schema',function(id, schema){
+		schema = JSON.parse(schema);
+		tv4.addSchema(id, schema);
+		//service.setSchema(JSON.parse(data));
 	});
 	
 
 	socketio.on('clidb.all',function(data){
-		console.log(data)
 		$rootScope.$apply(function(){
 			service.data = {};
 			for (var c in data) service.data[c] = parseJSONArray(data[c]);
