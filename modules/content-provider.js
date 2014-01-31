@@ -1,4 +1,3 @@
-module.exports = function(expressApp) {
-	var www = require('path').normalize(__dirname+'/../public');
-	expressApp.use(require('express').static(www));
+module.exports = function() {
+	return require('path').normalize(__dirname+'/../public');
 }
