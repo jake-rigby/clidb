@@ -1,0 +1,24 @@
+{
+  "name": "clidb",
+  "description": "database connection for web clients",
+  "author": {
+    "name": "wigby",
+    "email": "jakewigby@gmail.com",
+    "url": "http://www.jakerigby.co.uk"
+  },
+  "version": "0.0.0",
+  "main": "index.js",
+  "license": {
+    "type": "BSD"
+  },
+  "repository": {
+    "type": "git", 
+    "url": "12345"
+  },
+  "dependencies": {
+    "redis": "~0.8.4",
+    "socket.io": "~0.9.6",
+    "tv4": "1.0.12"
+  },
+  "readmeFilename": "README.md"
+}
