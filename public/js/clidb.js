@@ -4,18 +4,9 @@ angular.module('clidb',[])
 
 .factory('db', ['$rootScope', 'socket.io', function($rootScope, socketio) {
 	
-	var schema = {};
 	var service = { data: {}};
 
 	service.classes = {};
-
-	service.setSchema = function(value) {		
-		schema = value;
-	}
-
-	service.getSchema = function() {
-		return schema;
-	}
 
 	/**
 	 * overwrite the json instance enumerated by @param key
@@ -48,8 +39,8 @@ angular.module('clidb',[])
 	 * get the schema node describing instances
 	 * of type @param cls
 	 */
-	service.describe = function(cls) {
-
+	service.getSchema = function(cls) {
+		return tv4.getSchema(cls);
 	}
 
 
@@ -57,7 +48,7 @@ angular.module('clidb',[])
 	 * utility to create a minimal valid instance
 	 * of the given schema
 	 */
-	service.stub = function(schema) {
+	service.stub = function(cls) {
 
 	}
 
@@ -73,9 +64,8 @@ angular.module('clidb',[])
 
 
 	socketio.on('clidb.schema',function(id, schema){
-		schema = JSON.parse(schema);
+		var schema = JSON.parse(schema);
 		tv4.addSchema(id, schema);
-		//service.setSchema(JSON.parse(data));
 	});
 	
 
