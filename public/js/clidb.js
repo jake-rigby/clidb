@@ -13,8 +13,15 @@ angular.module('clidb',[])
 	 * of type @param cls
 	 */
 	service.save = function(cls, key, instance) {
-		socketio.emit('clidb.setitem', cls, key, instance);
-		//service.data[cls][key] = instance;
+		try {
+			var def =  tv4.getSchema(cls);
+			if (!def) throw 'no schema for '+cls;
+			if (tv4.validate(instance,def)) socketio.emit('clidb.setitem', cls, key, instance);
+			else throw tv4.error;
+			//service.data[cls][key] = instance; // <-- need token for unconfirmed deletes
+		} catch(err) {
+			console.log(err);
+		}
 	}
 
 	/**
@@ -35,21 +42,22 @@ angular.module('clidb',[])
 	}
 
 
-	/** TODO
-	 * get the schema node describing instances
-	 * of type @param cls
+	/**
+	 * compose a tv4 method
 	 */
-	service.getSchema = function(cls) {
+	service.define = function(cls) {
 		return tv4.getSchema(cls);
 	}
 
 
-	/** TODO
+	/**
 	 * utility to create a minimal valid instance
 	 * of the given schema
 	 */
-	service.stub = function(cls) {
-
+	service.stub = function(definition, cb) {
+		var instance = resolve(definition),
+			valid = tv4.validate(instance,definition);
+		cb(tv4.error, tv4.error ? null : instance);
 	}
 
 
@@ -64,8 +72,15 @@ angular.module('clidb',[])
 
 
 	socketio.on('clidb.schema',function(id, schema){
-		var schema = JSON.parse(schema);
+
+		// add the root
+		schema = JSON.parse(schema);
 		tv4.addSchema(id, schema);
+
+		// also add the definitions
+		for (var def in schema.definitions) {
+			tv4.addSchema(def,schema.definitions[def]);
+		}
 	});
 	
 
@@ -93,7 +108,7 @@ angular.module('clidb',[])
 
 
 	/**
-	 * helpers
+	 * helpers        
 	 */
 
 	function parseJSONArray(source){
@@ -101,6 +116,26 @@ angular.module('clidb',[])
 		for (var key in source) result[key] = JSON.parse(source[key]);
 		return result;
 	}
+
+ 	function resolve(s) {
+ 		if (!s) {
+ 			return null
+ 		} else if (s.type=='array'){
+			return [];//[resolve(s.items)];
+		} else if (s.type=='object'){
+			var r = {};
+			for (var p in s.properties){
+				if (s.properties[p].type=='object') r[p] = resolve(s.properties[p]);
+				else if (s.properties[p].type=='number') r[p] = 0;
+				else if (s.properties[p].type=='array') r[p] = resolve(s.properties[p]);
+				//else if schemas[s.properties[p].type] r[p] = resolve(schemas[s.properties[p].type]);
+				else {r[p]='';}
+			}
+			return r
+		} 
+		else return 'example <'+s.type+'>';	
+	}
+
 
 
 	return service;
