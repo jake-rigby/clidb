@@ -5,11 +5,11 @@ module.exports.connect = function(namespace, redis, socket) {
 		getschema : function(id, cb) {
 			if (!id) redis.hgetall(namespace+':clidb:schema',function(err, schemas) {
 				for (var key in schemas) {
-					cb(key, schemas[key]);
+					cb(err, key, schemas[key]);
 				}
 			});
 			else redis.hget(namespace+':clidb:schema', id, function(err, schema) {
-				cb(id, schema);
+				cb(err, id, schema);
 			});
 
 		},
@@ -21,7 +21,7 @@ module.exports.connect = function(namespace, redis, socket) {
 				for (var i=0; i<classkeys.length; i++) m.hgetall(namespace+':clidb:'+classkeys[i]);
 				m.exec(function(err,replies){
 					for (i=0; i<replies.length; i++) result[classkeys[i]] = replies[i];
-					cb(result);				
+					cb(err, result);				
 				});
 			});
 		},

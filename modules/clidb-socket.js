@@ -3,65 +3,47 @@ module.exports.connect = function(namespace, redis, socket) {
 	var cli = require('./clidb-direct');
 
 	socket.on('clidb.getschema', function(id) {
-		if (!id) redis.hgetall(namespace+':clidb:schema',function(err, schemas) {
-			for (var key in schemas) {
-				socket.emit('clidb.schema', key, schemas[key]);
-			}
+		cli.getitem(id, function(err, id, schema){
+			socket.emit('clidb.schema', id, schema, err);
+			if (err) console.log(err); 
 		});
-		else redis.hget(namespace+':clidb:schema', id, function(err, schema) {
-			socket.emit('clidb.schema', id, schema);
-		});
-
 	});
 
 	socket.on('clidb.getall', function() {
-		redis.smembers(namespace+':clidb:classes',function(err,classkeys){ // <-- return a list of our custom class names
-			var result = {}; // <-- we are going to collate all the data
-			var m = redis.multi();
-			for (var i=0; i<classkeys.length; i++) m.hgetall(namespace+':clidb:'+classkeys[i]);
-			m.exec(function(err,replies){
-				for (i=0; i<replies.length; i++) result[classkeys[i]] = replies[i];
-				socket.emit('clidb.all',result);				
-			});
+		cli.getall(function(err, result) {
+			socekt.emit('clidb.getall', result, err);
+			if (err) console.log(err); 
 		});
 	});
 
 	socket.on('clidb.getitem',function(classkey,itemkey){
-		redis.hget(namespace+':clidb:'+classkey,itemkey,function(err,item){
-			socket.emit('clidb.item',{classkey:classkey,itemkey:itemkey,value:item});
+		cli.getitem(classkey, itemkey, function(err, result) {
+			socekt.emit('clidb.item', {classkey:classkey, itemkey:itemkey, value:result}, err);
+			if (err) console.log(err);		
 		});
 	});
 
 	socket.on('clidb.setitem', function(classkey,itemkey,item){
-		// TODO restricted words 'classes', 'schema'
-		redis.sismember(namespace+':clidb:classes',classkey,function(err,is){
-			if (!is) redis.sadd(namespace+':clidb:classes',classkey);
-			redis.hset(namespace+':clidb:'+classkey,itemkey,JSON.stringify(item));
-			socket.emit('clidb.item',{classkey:classkey,itemkey:itemkey,value:item});
-		});
+		cli.setitem(classkey, itemkey, item, function(err, result) {
+			if (err) console.log(err);
+		}
 	});
 
 	socket.on('clidb.getclass',function(classkey){
-		redis.hgetall(namespace+':clidb:'+classkey,function(err,cls){
-			socket.emit('clidb.class',{classkey:classkey,value:cls});
-		});
+		cli.getclass(classkey, classCallback);
 	});
 	
 	socket.on('clidb.deleteitem',function(classkey,itemkey){
-		redis.hlen(namespace+':clidb:'+classkey,function(err,len){
-			if (len < 2) return;
-			redis.hdel(namespace+':clidb:'+classkey,itemkey);
-			redis.hgetall(namespace+':clidb:'+classkey,function(err,cls){
-				console.log(cls);
-				socket.emit('clidb.class',{classkey:classkey,value:cls});
-			});
-		});
+		cli.deleteitem(classkey, itemkey, classCallback)
 	});
-	/*
-	socket.on('clidb.commit',function(){
-		api.compile(function(err,data){
-			require('fs').writeFile(dataPath+'.json',JSON.stringify(data));
-		});
-	});
-	*/	
+
+	function classCallback(classkey, value, err) {
+		socket.emit('clidb.class',{classkey:classkey, value:value}, err);
+		if (err) console.log(err);	
+	}
+
+	function itemCallback(classkey, itemkey, value, err) {
+		socekt.emit('clidb.item', {classkey:classkey, itemkey:itemkey, value:value}, err);
+		if (err) console.log(err);				
+	}
 }
