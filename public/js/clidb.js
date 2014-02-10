@@ -128,7 +128,7 @@ angular.module('clidb',[])
 				if (s.properties[p].type=='object') r[p] = resolve(s.properties[p]);
 				else if (s.properties[p].type=='number') r[p] = 0;
 				else if (s.properties[p].type=='array') r[p] = resolve(s.properties[p]);
-				//else if schemas[s.properties[p].type] r[p] = resolve(schemas[s.properties[p].type]);
+				//else if schemas[s.properties[p].type] r[p] = resolve(schemas[s.properties[p].type]); // <-- search referenced schemas here
 				else {r[p]='';}
 			}
 			return r

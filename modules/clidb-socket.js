@@ -1,5 +1,7 @@
 module.exports.connect = function(namespace, redis, socket) {
 
+	var cli = require('./clidb-direct');
+
 	socket.on('clidb.getschema', function(id) {
 		if (!id) redis.hgetall(namespace+':clidb:schema',function(err, schemas) {
 			for (var key in schemas) {
