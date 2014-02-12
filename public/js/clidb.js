@@ -8,36 +8,12 @@ angular.module('clidb',[])
 
 	service.classes = {};
 
-	service.commands = [];
-	
-	var callbacks = {};
-
-	/**
-	 * evaluate a | delimied command expression
-	 * tags the resulting command/query with a session-unique id
-	 * callbacks are indexed via this id
-	 */
-	service.eval = function(x, cb) {
-		var id = service.commands.length;
-		service.commands.push({cmd: x, idx: id});
-		callbacks[id] = cb;
-		var words = x.split('|');
-		words.push(cb);
-		words[0] = 'clidb.' + words[0];
-		socketio.emit.apply(words[0],  words.slice(1));
-		/*
-		if (words[0] == 'get') op = getRemote;
-		else op = service[words[0]];
-		if (op) op.apply(service.eval, words.slice(1));
-		*/
-	}
-
 	/**
 	 * get an item without hitting the cache
-	 */
 	service.getRemote = function(cls, key) {
 		socketio.emit('clidb.getitem', cls, keym,)
 	}
+	 */
 
 	/**
 	 * overwrite the json instance enumerated by @param key
@@ -130,27 +106,59 @@ angular.module('clidb',[])
 	});
 
 
-	socketio.on('clidb.item',function(data){
+	socketio.on('clidb.item',function(data, err, qid){
+		console.log(arguments);
 		$rootScope.$apply(function(){
 			if (!service.data[data.classkey]) service.data[data.classkey] = {};
 			service.data[data.classkey][data.itemkey] = data.value;
-		});
+			linkExpression(data, err, qid);
+		}, true);
 	});
+
+	/**
+	 * evaluate a | delimied command expression
+	 * tags the resulting command/query with a session-unique id
+	 * callbacks are indexed via this id
+	 */
+	service.commands = [];
+	
+	var callbacks = {};
+
+	service.eval = function(x, cb) {
+		var id = service.commands.length;
+		service.commands.push({cmd: x, idx: id});
+		callbacks[id] = cb;
+		var words = x.split('|');
+		words.push(id);
+		words[0] = 'clidb.' + words[0];
+		var op = api[words[0]];
+		if (op) op.apply(service.eval, words.slice(1));
+	}
+
+	var api = {
+		get : function(classkey, itemkey, qid) {
+			socketio.emit('clidb.getitem', classkey, itemkey, qid);
+		},
+		dlt : function(classkey, itemkey, qid) {
+			socketio.emit('clidb.deleteitem', classkey, itemkey, qid);
+		},
+		set : function(classkey, itemkey, value, qid) {
+			socketio.emit('clidb.set', classkey, itemkey, value, qid);
+		}
+	}
+
+	function linkExpression(reply, err, id) {
+		service.commands[id].reply = reply;
+		if (callbacks[id]) {
+			callbacks[id](err, reply);
+			delete callbacks[id];
+		}
+	}
 
 
 	/**
 	 * helpers        
 	 */
-
-	function linkExpression(reply, err, id) {
-		$rootScope.$apply(function() {
-			service.commands[id].reply = reply;
-			if (callbacks[id]) {
-				callbacks[id](err, reply);
-				delete callbacks[id];
-			}
-		}, true);
-	}
 
 	function parseJSONArray(source){
 		var result = {};
@@ -187,10 +195,31 @@ angular.module('clidb',[])
 }])
 
 
-.controller('ConsoleController',['$scope', 'db', function($scope, db) {
+.controller('clidb.ConsoleController',['$scope', 'db', function($scope, db) {
 
-	var service = {
+	var idx = 0;
+
+	$scope.submit = function(entry){
+		db.eval(entry);
+		$scope.cmd = null;
+		idx = $scope.commands.length;
 	}
+
+	$scope.inpKeyDown = function(keyCode){
+		if (keyCode==38 && idx == $scope.commands.length - 1) {
+			$scope.cmd = ''; idx = $scope.commands.length;
+		} else if (keyCode==38 && idx < $scope.commands.length - 1) {
+			$scope.cmd = $scope.commands[++idx].cmd;
+		} else if (keyCode==40 && idx > 0) {
+			$scope.cmd = $scope.commands[--idx].cmd;
+		}
+	}
+
+	$scope.$watch(function(){
+		return db.commands;
+	},function(commands){
+		$scope.commands = commands;
+	});
 
 
 }])
