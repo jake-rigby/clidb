@@ -4,9 +4,40 @@ angular.module('clidb',[])
 
 .factory('db', ['$rootScope', 'socket.io', function($rootScope, socketio) {
 	
-	var service = { data: {}};
+	var service = { data: {} };
 
 	service.classes = {};
+
+	service.commands = [];
+	
+	var callbacks = {};
+
+	/**
+	 * evaluate a | delimied command expression
+	 * tags the resulting command/query with a session-unique id
+	 * callbacks are indexed via this id
+	 */
+	service.eval = function(x, cb) {
+		var id = service.commands.length;
+		service.commands.push({cmd: x, idx: id});
+		callbacks[id] = cb;
+		var words = x.split('|');
+		words.push(cb);
+		words[0] = 'clidb.' + words[0];
+		socketio.emit.apply(words[0],  words.slice(1));
+		/*
+		if (words[0] == 'get') op = getRemote;
+		else op = service[words[0]];
+		if (op) op.apply(service.eval, words.slice(1));
+		*/
+	}
+
+	/**
+	 * get an item without hitting the cache
+	 */
+	service.getRemote = function(cls, key) {
+		socketio.emit('clidb.getitem', cls, keym,)
+	}
 
 	/**
 	 * overwrite the json instance enumerated by @param key
@@ -71,7 +102,7 @@ angular.module('clidb',[])
 	});
 
 
-	socketio.on('clidb.schema',function(id, schema){
+	socketio.on('clidb.schema',function(id, schema, qid){
 
 		// add the root
 		schema = JSON.parse(schema);
@@ -111,12 +142,25 @@ angular.module('clidb',[])
 	 * helpers        
 	 */
 
+	function linkExpression(reply, err, id) {
+		$rootScope.$apply(function() {
+			service.commands[id].reply = reply;
+			if (callbacks[id]) {
+				callbacks[id](err, reply);
+				delete callbacks[id];
+			}
+		}, true);
+	}
+
 	function parseJSONArray(source){
 		var result = {};
 		for (var key in source) result[key] = JSON.parse(source[key]);
 		return result;
 	}
 
+	/**
+	 * create a minimal instance described by a schema
+	 */
  	function resolve(s) {
  		if (!s) {
  			return null
@@ -141,3 +185,13 @@ angular.module('clidb',[])
 	return service;
 
 }])
+
+
+.controller('ConsoleController',['$scope', 'db', function($scope, db) {
+
+	var service = {
+	}
+
+
+}])
+

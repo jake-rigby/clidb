@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html ng-app="story-editor">
+	<head>
+
+		<meta charset="utf-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=9" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+		<title>clidb web console</title>
+		
+		<link rel="stylesheet" type="text/css" href="lib/bootstrap/css/bootstrap.min.css">
+		<link rel="stylesheet" type="text/css" href="lib/awesome-markers/leaflet.awesome-markers.css">
+		<link rel="stylesheet" type="text/css" href="lib/font-awesome/css/font-awesome.min.css">
+		<link rel="stylesheet" type="text/css" href="css/main.css">
+
+		<script type="text/javascript" src="lib/angular-1.2.0-rc.2/angular.js"></script>
+
+	</head>
+
+	<body id="heading" >
+
+		<div ng-controller="clidb.ConsoleController" class="container" class="bg_d">
+
+			<div class="row padtop">
+				<div class="col-xs-12">
+					<a href="/#/appdata">data</a>
+				</div>
+			</div>
+
+			<div class="row pad" ng-controller="ConsoleController">
+				<ul class="col-xs-12">
+					<li style="list-style:none;" class="pad">
+						<form class="form-horizontal" role="form" ng-submit="submit(cmd)">
+							<input type="text" class="form-control" ng-model="cmd" >
+						</form>
+					</li>
+					<li style="list-tsyle:none;" ng-repeat="(key, value) in commands | orderBy: '-idx' | limitTo: 20">
+						<div>&gt; {{value.cmd}}</div>
+						<div>{{value.reply}}</div>
+					</li>
+				</ul>
+			</div>
+
+		</div>
+		
+		<div ng-controller="UserController" class="navbar-fixed-bottom pad padright padleft bg_white">
+			<div class="pull-left ng-cloak">
+				<a href="/"><icom class="icon-home icon-2x"></icom></a>
+				{{user.displayName}}
+			</div>
+		</div>
+		
+		<script type="text/javascript" src="lib/jq.js"></script> 
+		<script type="text/javascript" src="lib/angular-1.2.0-rc.2/angular-route.js"></script>
+		<script type="text/javascript" src="lib/socket.io.js"></script>
+		<script type="text/javascript" src="lib/ui-bootstrap-tpls-0.10.0.js"></script>
+		<script type="text/javascript" src="lib/tv4/tv4.js"></script>
+
+		<script type="text/javascript" src="js/story-editor.app.js"></script>
+		<script type="text/javascript" src="js/public.services.js"></script>
+		<script type="text/javascript" src="js/public.controllers.js"></script>		
+		<script type="text/javascript" src="js/public.filters.js"></script>
+		<!--
+		<script type="text/javascript" src="js/appdata.services.js"></script>
+		<script type="text/javascript" src="js/appdata.controllers.js"></script>
+		-->
+		<script type="text/javascript" src="js/clidb.js"></script>
+		<script type="text/javascript" src="js/story-editor.services.js"></script>
+		<script type="text/javascript" src="js/story-editor.controllers.js"></script>
+
+	</body>
+</html>
