@@ -1,6 +1,6 @@
 module.exports.connect = function(namespace, redis, socket) {
 
-	var cli = require('./clidb-direct');
+	var cli = require('./clidb-direct').connect(namespace, redis, socket);
 
 	socket.on('clidb.getschema', function(id, qid) {
 		cli.getitem(id, function(err, id, schema){

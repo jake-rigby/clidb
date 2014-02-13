@@ -116,7 +116,7 @@ angular.module('clidb',[])
 	});
 
 	/**
-	 * evaluate a | delimied command expression
+	 * evaluate a '|' delimied command expression
 	 * tags the resulting command/query with a session-unique id
 	 * callbacks are indexed via this id
 	 */
@@ -131,6 +131,7 @@ angular.module('clidb',[])
 		var words = x.split('|');
 		words.push(id);
 		words[0] = 'clidb.' + words[0];
+		console.log(words)
 		var op = api[words[0]];
 		if (op) op.apply(service.eval, words.slice(1));
 	}

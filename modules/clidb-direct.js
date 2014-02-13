@@ -27,6 +27,7 @@ module.exports.connect = function(namespace, redis, socket) {
 		},
 
 		getitem : function(classkey,itemkey,cb){
+			console.log(arguments);
 			redis.hget(namespace+':clidb:'+classkey,itemkey,function(err,item){
 				cb(item);
 			});
