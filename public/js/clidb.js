@@ -78,7 +78,7 @@ angular.module('clidb',[])
 	});
 
 
-	socketio.on('clidb.schema',function(id, schema, qid){
+	socketio.on('clidb.schema',function(err, id, schema){
 
 		// add the root
 		schema = JSON.parse(schema);
@@ -91,7 +91,7 @@ angular.module('clidb',[])
 	});
 	
 
-	socketio.on('clidb.all',function(data){
+	socketio.on('clidb.all',function(err, data){
 		$rootScope.$apply(function(){
 			service.data = {};
 			for (var c in data) service.data[c] = parseJSONArray(data[c]);
@@ -99,29 +99,37 @@ angular.module('clidb',[])
 	});
 	
 
-	socketio.on('clidb.class',function(data){
+	socketio.on('clidb.class',function(err, data){
 		$rootScope.$apply(function(){
 			service.data[data.classkey] = parseJSONArray(data.value);
 		});
 	});
 
 
-	socketio.on('clidb.item',function(data, err, qid){
-		$rootScope.$apply(function(){
-			if (!service.data[data.classkey]) service.data[data.classkey] = {};
-			service.data[data.classkey][data.itemkey] = data.value;
+	socketio.on('clidb.item',function(err, data, qid){
+		$rootScope.$apply(function() {
+			if (data) {
+				if (!service.data[data.classkey]) service.data[data.classkey] = {};
+				service.data[data.classkey][data.itemkey] = data.value;
+			}
 			if (qid) linkExpression(err, data, qid);
 		}, true);
 	});
 
-	socketio.on('clidb.setitem', function(data, err, qid){
+	socketio.on('clidb.setitem', function(err, data, qid){
+		$rootScope.$apply(function(){
+			if (qid) linkExpression(err, data, qid);
+		}, true);
+	})
+
+	socketio.on('clidb.deleteitem', function(err, data, qid){
 		$rootScope.$apply(function(){
 			if (qid) linkExpression(err, data, qid);
 		}, true);
 	})
 
 	/**
-	 * evaluate a '|' delimied command expression
+	 * evaluate a ' ' delimied command expression (quotes accepted as one term)
 	 * tags the resulting command/query with a session-unique id
 	 * callbacks are indexed via this id
 	 */
@@ -130,14 +138,21 @@ angular.module('clidb',[])
 	var callbacks = {};
 
 	service.eval = function(x, cb) {
+
 		var id = String(service.commands.length);
 		service.commands.push({cmd: x, idx: id});
 		callbacks[id] = cb;
-		var words = x.split('|');
+
+		// http://stackoverflow.com/questions/10530532/regexp-to-split-by-white-space-with-grouping-quotes
+		var words = [];
+		x.replace(/"([^"]*)"|'([^']*)'|(\S+)/g, function(g0,g1,g2,g3){
+            words.push(g1 || g2 || g3 || '');
+        });
+
 		var op = api[words[0]];
 		var schm = tv4.getSchema('api#'+words[0]);
 		words[0] = 'clidb.' + words[0];
-		if (op && tv4.validate(words.slice(1),schm)) {
+		if (op && schm && tv4.validate(words.slice(1), schm)) {
 			words.push(id);
 			op.apply(service.eval, words.slice(1));
 		} else {
@@ -166,6 +181,7 @@ angular.module('clidb',[])
 
 	function linkExpression(err, reply, id) {
 		var idx = Number(id);
+		console.log(err);
 		service.commands[id].reply = reply;
 		service.commands[id].err = err;
 		if (callbacks[id]) {

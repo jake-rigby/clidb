@@ -18,7 +18,7 @@
   "dependencies": {
     "redis": "~0.8.4",
     "socket.io": "~0.9.6",
-    "tv4": "1.0.12"
+    "tv4": "1.0.14"
   },
   "readmeFilename": "README.md"
 }

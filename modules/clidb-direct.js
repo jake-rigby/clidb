@@ -1,3 +1,8 @@
+
+// deps
+var tv4 = require('tv4');
+
+// api
 module.exports.connect = function(namespace, redis, socket) {
 	
 	return {
@@ -28,32 +33,37 @@ module.exports.connect = function(namespace, redis, socket) {
 
 		getitem : function(classkey,itemkey,cb){
 			redis.hget(namespace+':clidb:'+classkey,itemkey,function(err,item){
-				cb(err, item);
+				cb(item ? err : 'no value', item);
 			});
 		},
 
-		setitem : function(classkey,itemkey,item,cb){
-			// TODO restricted words 'classes', 'schema'
-			redis.sismember(namespace+':clidb:classes',classkey,function(err,is){
-				if (!is) redis.sadd(namespace+':clidb:classes',classkey);
-				redis.hset(namespace+':clidb:'+classkey,itemkey,JSON.stringify(item));
-				cb(err, item);
-			});
+		/*
+		 * store @param value in the database
+		 * if the class identifies a recognised schema, validate the value by that
+		 * if the class is unknown, store the value as a primitive type (the remote client can decide)
+		 */ 
+		setitem : function(classkey, itemkey, item, cb){
+			var schema = tv4.getSchema('#'+classkey);
+			if ((schema && tv4.validate(item, schema)) || !schema) { //<-- only don't add if we have a schema and its not valid
+				redis.sismember(namespace+':clidb:classes',classkey,function(err,is){
+					if (!is) redis.sadd(namespace+':clidb:classes',classkey);
+					redis.hset(namespace+':clidb:'+classkey,itemkey,JSON.stringify(item));
+					cb(err, item);
+				});
+			} else {
+				cb(item+' does not validate '+schema.id, false);
+			}
 		},
 
 		getclass : function(classkey,cb){
-			redis.hgetall(namespace+':clidb:'+classkey,function(err,cls){
-				cb(cls);
-			});
+			redis.hgetall(namespace+':clidb:'+classkey,cb);
 		},
 		
 		deleteitem : function(classkey,itemkey,cb){
-			redis.hlen(namespace+':clidb:'+classkey,function(err,len){
-				if (len < 2) return;
-				redis.hdel(namespace+':clidb:'+classkey,itemkey);
-				redis.hgetall(namespace+':clidb:'+classkey,function(err,cls){
-					cb(cls);
-				});
+			redis.hlen(namespace+':clidb:'+classkey, function(err, len){
+				//if (len < 2) return; // <-- NEED TO DELETE THE CLASS NAME FROM THE CLASS SET
+				redis.hdel(namespace+':clidb:'+classkey, itemkey, cb); 
+				// redis.hgetall(namespace+':clidb:'+classkey, cb); // <-- this updates the remote cache (clidb.class.. is a TODO)
 			});
 		}
 		/*,

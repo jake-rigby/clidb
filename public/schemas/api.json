@@ -23,6 +23,18 @@
 			],
 			"minItems": 3,
 			"maxItems": 3
+		},
+		"dlt": {
+			"type": "object",
+			"id": "#dlt",
+			"type": "array",
+			"items": [
+				{"type": "string"},
+				{"type": "string"}
+			],
+			"minItems": 2,
+			"maxItems": 2
 		}
+
 	}
 }
