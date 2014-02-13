@@ -1,0 +1,26 @@
+{
+    "$schema": "http://json-schema.org/schema#",
+	"type": "object",
+	"properties": {
+		"get": {
+			"id": "#get",
+			"type": "array",
+			"items": [
+				{"type": "string"},
+				{"type": "string"}
+			],
+			"minItems": 2
+		},
+		"set": {
+			"type": "object",
+			"id": "#set",
+			"type": "array",
+			"items": [
+				{"type": "string"},
+				{"type": "string"},
+				{"type": "string"}
+			],
+			"minItems": 3
+		}
+	}
+}

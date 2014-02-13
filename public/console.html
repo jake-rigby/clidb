@@ -30,7 +30,7 @@
 					</li>
 					<li style="list-tsyle:none;" ng-repeat="(key, value) in commands | orderBy: '-idx' | limitTo: 20">
 						<div>&gt; {{value.cmd}}</div>
-						<div>{{value.reply}}</div>
+						<div>{{value.reply}}    <small class="text-danger">{{value.err}}</small></div>
 					</li>
 				</ul>
 			</div>

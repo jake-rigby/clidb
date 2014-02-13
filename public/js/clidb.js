@@ -2,7 +2,7 @@
 
 angular.module('clidb',[])
 
-.factory('db', ['$rootScope', 'socket.io', function($rootScope, socketio) {
+.factory('db', ['$rootScope', 'socket.io', '$http', function($rootScope, socketio, $http) {
 	
 	var service = { data: {} };
 
@@ -107,13 +107,19 @@ angular.module('clidb',[])
 
 
 	socketio.on('clidb.item',function(data, err, qid){
-		console.log(arguments);
 		$rootScope.$apply(function(){
 			if (!service.data[data.classkey]) service.data[data.classkey] = {};
 			service.data[data.classkey][data.itemkey] = data.value;
-			linkExpression(data, err, qid);
+			if (qid) linkExpression(err, data, qid);
 		}, true);
 	});
+
+	socketio.on('clidb.setitem', function(data, err, qid){
+		console.log(data, err, qid);
+		$rootScope.$apply(function(){
+			if (qid) linkExpression(err, data, qid);
+		}, true);
+	})
 
 	/**
 	 * evaluate a '|' delimied command expression
@@ -129,11 +135,18 @@ angular.module('clidb',[])
 		service.commands.push({cmd: x, idx: id});
 		callbacks[id] = cb;
 		var words = x.split('|');
-		words.push(id);
-		words[0] = 'clidb.' + words[0];
-		console.log(words)
 		var op = api[words[0]];
-		if (op) op.apply(service.eval, words.slice(1));
+		var schm = tv4.getSchema('api#'+words[0]);
+		words[0] = 'clidb.' + words[0];
+		words.push(id);
+		if (op && tv4.validate(words.slice(1),schm)) {
+			op.apply(service.eval, words.slice(1));
+		} else {
+			var err = schm ?
+				'expression does not comply with schema : '+schm.id :
+				'unknown command : '+ words[0];
+			linkExpression(err, null, id);
+		}
 	}
 
 	var api = {
@@ -144,12 +157,17 @@ angular.module('clidb',[])
 			socketio.emit('clidb.deleteitem', classkey, itemkey, qid);
 		},
 		set : function(classkey, itemkey, value, qid) {
-			socketio.emit('clidb.set', classkey, itemkey, value, qid);
+			socketio.emit('clidb.setitem', classkey, itemkey, value, qid);
 		}
 	}
+	$http.get('schemas/api.json').then(function(result){
+		tv4.addSchema('api',result.data);
+	})
 
-	function linkExpression(reply, err, id) {
+
+	function linkExpression(err, reply, id) {
 		service.commands[id].reply = reply;
+		service.commands[id].err = err;
 		if (callbacks[id]) {
 			callbacks[id](err, reply);
 			delete callbacks[id];
@@ -201,7 +219,10 @@ angular.module('clidb',[])
 	var idx = 0;
 
 	$scope.submit = function(entry){
-		db.eval(entry);
+		console.log(entry);
+		db.eval(entry, function(err, result) {
+			console.log(err, result);
+		});
 		$scope.cmd = null;
 		idx = $scope.commands.length;
 	}

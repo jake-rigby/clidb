@@ -27,9 +27,8 @@ module.exports.connect = function(namespace, redis, socket) {
 		},
 
 		getitem : function(classkey,itemkey,cb){
-			console.log(arguments);
 			redis.hget(namespace+':clidb:'+classkey,itemkey,function(err,item){
-				cb(item);
+				cb(err, item);
 			});
 		},
 
@@ -38,7 +37,7 @@ module.exports.connect = function(namespace, redis, socket) {
 			redis.sismember(namespace+':clidb:classes',classkey,function(err,is){
 				if (!is) redis.sadd(namespace+':clidb:classes',classkey);
 				redis.hset(namespace+':clidb:'+classkey,itemkey,JSON.stringify(item));
-				cb(item);
+				cb(err, item);
 			});
 		},
 
