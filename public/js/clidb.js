@@ -115,7 +115,6 @@ angular.module('clidb',[])
 	});
 
 	socketio.on('clidb.setitem', function(data, err, qid){
-		console.log(data, err, qid);
 		$rootScope.$apply(function(){
 			if (qid) linkExpression(err, data, qid);
 		}, true);
@@ -131,19 +130,19 @@ angular.module('clidb',[])
 	var callbacks = {};
 
 	service.eval = function(x, cb) {
-		var id = service.commands.length;
+		var id = String(service.commands.length);
 		service.commands.push({cmd: x, idx: id});
 		callbacks[id] = cb;
 		var words = x.split('|');
 		var op = api[words[0]];
 		var schm = tv4.getSchema('api#'+words[0]);
 		words[0] = 'clidb.' + words[0];
-		words.push(id);
 		if (op && tv4.validate(words.slice(1),schm)) {
+			words.push(id);
 			op.apply(service.eval, words.slice(1));
 		} else {
 			var err = schm ?
-				'expression does not comply with schema : '+schm.id :
+				tv4.error.message :
 				'unknown command : '+ words[0];
 			linkExpression(err, null, id);
 		}
@@ -166,6 +165,7 @@ angular.module('clidb',[])
 
 
 	function linkExpression(err, reply, id) {
+		var idx = Number(id);
 		service.commands[id].reply = reply;
 		service.commands[id].err = err;
 		if (callbacks[id]) {
@@ -219,14 +219,16 @@ angular.module('clidb',[])
 	var idx = 0;
 
 	$scope.submit = function(entry){
-		console.log(entry);
 		db.eval(entry, function(err, result) {
-			console.log(err, result);
+			console.log(entry, '-->', err, result);
 		});
 		$scope.cmd = null;
 		idx = $scope.commands.length;
 	}
 
+	/**
+	 * use  ng-keydown="inpKeyDown($event.keyCode)"
+	 */
 	$scope.inpKeyDown = function(keyCode){
 		if (keyCode==38 && idx == $scope.commands.length - 1) {
 			$scope.cmd = ''; idx = $scope.commands.length;

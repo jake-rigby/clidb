@@ -9,7 +9,8 @@
 				{"type": "string"},
 				{"type": "string"}
 			],
-			"minItems": 2
+			"minItems": 2,
+			"maxItems": 2
 		},
 		"set": {
 			"type": "object",
@@ -20,7 +21,8 @@
 				{"type": "string"},
 				{"type": "string"}
 			],
-			"minItems": 3
+			"minItems": 3,
+			"maxItems": 3
 		}
 	}
 }
