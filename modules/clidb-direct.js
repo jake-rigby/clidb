@@ -16,7 +16,6 @@ module.exports.connect = function(namespace, redis, socket) {
 			else redis.hget(namespace+':clidb:schema', id, function(err, schema) {
 				cb(err, id, schema);
 			});
-
 		},
 
 		getall : function(cb) {

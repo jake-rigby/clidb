@@ -4,67 +4,54 @@ angular.module('clidb',[])
 
 .factory('db', ['$rootScope', 'socket.io', '$http', function($rootScope, socketio, $http) {
 	
+	// cache
 	var service = { data: {} };
 
-	service.classes = {};
+	// load local api schema to validate command strings
+	$http.get('schemas/api.json').then(function(result){
+		tv4.addSchema('api',result.data);
+	})
 
-	/**
-	 * get an item without hitting the cache
-	service.getRemote = function(cls, key) {
-		socketio.emit('clidb.getitem', cls, keym,)
-	}
-	 */
+	service.api = {
 
-	/**
-	 * overwrite the json instance enumerated by @param key
-	 * of type @param cls
-	 */
-	service.save = function(cls, key, instance) {
-		try {
-			var def =  tv4.getSchema(cls);
-			if (!def) throw 'no schema for '+cls;
-			if (tv4.validate(instance,def)) socketio.emit('clidb.setitem', cls, key, instance);
-			else throw tv4.error;
-			//service.data[cls][key] = instance; // <-- need token for unconfirmed deletes
-		} catch(err) {
-			console.log(err);
+		getc : function(classkey, itmkey, qid) {
+			var cached = service.data[cls][key];
+			if (!cached) service.api.get(cls, key);
+			else linkExpression(null, cached, qid);
+		},
+
+		get : function(classkey, itemkey, qid) {
+			socketio.emit('clidb.getitem', classkey, itemkey, qid);
+		},
+
+		dlt : function(classkey, itemkey, qid) {
+			socketio.emit('clidb.deleteitem', classkey, itemkey, qid);
+		},
+
+		set : function(classkey, itemkey, value, qid) {
+			socketio.emit('clidb.setitem', classkey, itemkey, value, qid);
+		},
+
+		new : function(classkey, itemkey, qid) {
+			var definition = tv4.getSchema(classkey),
+				instance = resolve(definition);
+			if (!instance) return linkExpression('unable to create '+classkey, null, qid);
+			var valid = tv4.validate(instance,definition);
+			if (valid) socketio.emit('clidb.setitem', classkey, itemkey, instance, qid);
+			else linkExpression(tv4.error, null, qid);
+		},
+
+		list : function(classkey, qid) {
+			socketio.emit('clidb.getclass', classkey, qid);
+		},
+
+		schema : function(schemaName, qid) {
+			// TODO
+		},
+
+		edit : function(classkey, itemkey) {
+			// TODO
 		}
-	}
-
-	/**
-	 * delete the json instance enumerated by @param key
-	 * of type @param cls
-	 */
-	service.dlt = function(cls, key) {
-		socketio.emit('clidb.deleteitem', cls, key);
-	}
-
-
-	/**
-	 * return the json instance enumerated by @param key
-	 * of type @param cls without worying about looking in a cache
-	 */
-	service.get = function(cls, key) {
-		return service.data[cls][key]
-	}
-
-
-	/**
-	 * compose a tv4 method
-	 */
-	service.define = function(cls) {
-		return tv4.getSchema(cls);
-	}
-
-
-	/**
-	 * utility to create a minimal valid instance
-	 * of the given schema
-	 */
-	service.stub = function(definition, cb) {
-		var instance = resolve(definition),
-			valid = tv4.validate(instance,definition);
-		cb(tv4.error, tv4.error ? null : instance);
 	}
 
 
@@ -156,7 +143,7 @@ angular.module('clidb',[])
         });
 
 		// validate the command via its schema
-		var op = api[words[0]];
+		var op = service.api[words[0]];
 		var schm = tv4.getSchema('api#'+words[0]);
 		words[0] = 'clidb.' + words[0];
 
@@ -174,43 +161,9 @@ angular.module('clidb',[])
 		}
 	}
 
-	var api = {
-
-		get : function(classkey, itemkey, qid) {
-			socketio.emit('clidb.getitem', classkey, itemkey, qid);
-		},
-
-		dlt : function(classkey, itemkey, qid) {
-			socketio.emit('clidb.deleteitem', classkey, itemkey, qid);
-		},
-
-		set : function(classkey, itemkey, value, qid) {
-			socketio.emit('clidb.setitem', classkey, itemkey, value, qid);
-		},
-
-		new : function(classkey, itemkey, qid) {
-			var definition = tv4.getSchema(classkey),
-				instance = resolve(definition);
-			if (!instance) return linkExpression('unable to create '+classkey, null, qid);
-			var valid = tv4.validate(instance,definition);
-			if (valid) socketio.emit('clidb.setitem', classkey, itemkey, instance, qid);
-			else linkExpression(tv4.error, null, qid);
-		},
-
-		list : function(classkey, qid) {
-			socketio.emit('clidb.getclass', classkey, qid);
-		},
-
-		schema : function(schemaName, qid) {
-			// TODO
-		}
-	}
-
-	$http.get('schemas/api.json').then(function(result){
-		tv4.addSchema('api',result.data);
-	})
-
-
+	/**
+	 * link async results to cached commands and their callbacks
+	 */
 	function linkExpression(err, reply, id) {
 		var idx = Number(id);
 		service.commands[id].reply = reply;
@@ -225,7 +178,6 @@ angular.module('clidb',[])
 	/**
 	 * helpers        
 	 */
-
 	function parseJSONArray(source){
 		var result = {};
 		for (var key in source) result[key] = JSON.parse(source[key]);
@@ -258,7 +210,6 @@ angular.module('clidb',[])
 		} 
 		else return 'example <'+s.type+'>';	
 	}
-
 
 
 	return service;
