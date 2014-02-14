@@ -21,11 +21,7 @@ module.exports.connect = function(namespace, redis, socket) {
 
 	socket.on('clidb.getitem',function(classkey, itemkey, qid) {
 		cli.getitem(classkey, itemkey, function(err, result) {
-			socket.emit('clidb.item', err, result ? {
-				classkey: classkey, 
-				itemkey: itemkey, 
-				value: result
-			} : null, qid);
+			socket.emit('clidb.item', err, result, qid);
 			if (err) console.log(err);		
 		});
 	});

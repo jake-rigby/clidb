@@ -55,8 +55,12 @@ module.exports.connect = function(namespace, redis, socket) {
 			}
 		},
 
-		getclass : function(classkey,cb){
+		getclass : function(classkey,cb) {
 			redis.hgetall(namespace+':clidb:'+classkey,cb);
+		},
+
+		listclasses : function(classkey,cb) {
+			redis.smembers(namespace+':clidb:classes',cb);
 		},
 		
 		deleteitem : function(classkey,itemkey,cb){

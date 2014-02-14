@@ -82,7 +82,7 @@ angular.module('clidb',[])
 
 		// add the root
 		schema = JSON.parse(schema);
-		tv4.addSchema(id, schema);
+		tv4.addSchema(schema);
 
 		// also add the definitions
 		for (var def in schema.definitions) {
@@ -99,9 +99,10 @@ angular.module('clidb',[])
 	});
 	
 
-	socketio.on('clidb.class',function(err, data){
+	socketio.on('clidb.class',function(err, data, qid){
 		$rootScope.$apply(function(){
 			service.data[data.classkey] = parseJSONArray(data.value);
+			if (qid) linkExpression(err, data, qid);
 		});
 	});
 
@@ -116,29 +117,34 @@ angular.module('clidb',[])
 		}, true);
 	});
 
+
 	socketio.on('clidb.setitem', function(err, data, qid){
 		$rootScope.$apply(function(){
 			if (qid) linkExpression(err, data, qid);
 		}, true);
-	})
+	});
+
 
 	socketio.on('clidb.deleteitem', function(err, data, qid){
 		$rootScope.$apply(function(){
 			if (qid) linkExpression(err, data, qid);
 		}, true);
-	})
+	});
 
-	/**
+
+	/* Command Evaluation
+	 *
 	 * evaluate a ' ' delimied command expression (quotes accepted as one term)
 	 * tags the resulting command/query with a session-unique id
 	 * callbacks are indexed via this id
 	 */
-	service.commands = [];
 	
+	service.commands = [];
 	var callbacks = {};
 
 	service.eval = function(x, cb) {
 
+		// index the callback 
 		var id = String(service.commands.length);
 		service.commands.push({cmd: x, idx: id});
 		callbacks[id] = cb;
@@ -149,13 +155,18 @@ angular.module('clidb',[])
             words.push(g1 || g2 || g3 || '');
         });
 
+		// validate the command via its schema
 		var op = api[words[0]];
 		var schm = tv4.getSchema('api#'+words[0]);
 		words[0] = 'clidb.' + words[0];
+
 		if (op && schm && tv4.validate(words.slice(1), schm)) {
+		
 			words.push(id);
 			op.apply(service.eval, words.slice(1));
+		
 		} else {
+		
 			var err = schm ?
 				tv4.error.message :
 				'unknown command : '+ words[0];
@@ -164,16 +175,37 @@ angular.module('clidb',[])
 	}
 
 	var api = {
+
 		get : function(classkey, itemkey, qid) {
 			socketio.emit('clidb.getitem', classkey, itemkey, qid);
 		},
+
 		dlt : function(classkey, itemkey, qid) {
 			socketio.emit('clidb.deleteitem', classkey, itemkey, qid);
 		},
+
 		set : function(classkey, itemkey, value, qid) {
 			socketio.emit('clidb.setitem', classkey, itemkey, value, qid);
+		},
+
+		new : function(classkey, itemkey, qid) {
+			var definition = tv4.getSchema(classkey),
+				instance = resolve(definition);
+			if (!instance) return linkExpression('unable to create '+classkey, null, qid);
+			var valid = tv4.validate(instance,definition);
+			if (valid) socketio.emit('clidb.setitem', classkey, itemkey, instance, qid);
+			else linkExpression(tv4.error, null, qid);
+		},
+
+		list : function(classkey, qid) {
+			socketio.emit('clidb.getclass', classkey, qid);
+		},
+
+		schema : function(schemaName, qid) {
+			// TODO
 		}
 	}
+
 	$http.get('schemas/api.json').then(function(result){
 		tv4.addSchema('api',result.data);
 	})
@@ -181,7 +213,6 @@ angular.module('clidb',[])
 
 	function linkExpression(err, reply, id) {
 		var idx = Number(id);
-		console.log(err);
 		service.commands[id].reply = reply;
 		service.commands[id].err = err;
 		if (callbacks[id]) {
@@ -212,11 +243,16 @@ angular.module('clidb',[])
 		} else if (s.type=='object'){
 			var r = {};
 			for (var p in s.properties){
+				console.log(s.properties[p].$ref)
 				if (s.properties[p].type=='object') r[p] = resolve(s.properties[p]);
 				else if (s.properties[p].type=='number') r[p] = 0;
 				else if (s.properties[p].type=='array') r[p] = resolve(s.properties[p]);
+				else if (s.properties[p].type=='string') r[p]='';
+				else if (s.properties[p].$ref && tv4.getSchema(s.properties[p].$ref)) {
+					r[p] = resolve(tv4.getSchema(s.properties[p].$ref));
+				} 
+				else r[p] = null;
 				//else if schemas[s.properties[p].type] r[p] = resolve(schemas[s.properties[p].type]); // <-- search referenced schemas here
-				else {r[p]='';}
 			}
 			return r
 		} 

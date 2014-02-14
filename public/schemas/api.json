@@ -34,6 +34,27 @@
 			],
 			"minItems": 2,
 			"maxItems": 2
+		},
+		"new": {
+			"type": "object",
+			"id": "#new",
+			"type": "array",
+			"items": [
+				{"type": "string"},
+				{"type": "string"}
+			],
+			"minItems": 2,
+			"maxItems": 2
+		},
+		"list": {
+			"type": "object",
+			"id": "#list",
+			"type": "array",
+			"items": [
+				{"type": "string"}
+			],
+			"minItems": 1,
+			"maxItems": 1
 		}
 
 	}

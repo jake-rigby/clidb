@@ -1,4 +1,9 @@
-
+/**
+ * @author Jake Rigby
+ *
+ * Build a redis transaction to add a bunch of json schemas to 
+ * the db, hashed by a unique ns and their id
+ */
 var tv4 = require('tv4');
 
 module.exports = function(namespace, redis, schemas, cb) {
@@ -13,6 +18,6 @@ module.exports = function(namespace, redis, schemas, cb) {
 		console.log('clidb [BUILDER] add schema --> ',id);
 	}
 	m.exec(function(err,replies) {
-		if (cb) cb();
+		if (cb) cb(err, replies);
 	});
 }
