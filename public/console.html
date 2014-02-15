@@ -19,30 +19,30 @@
 
 	<body class="bg_d bd_lead_d lead_d">
 
-		<div ng-controller="clidb.ConsoleController" class="container" class="bg_d">
+		<div ng-controller="clidb.ConsoleController" class="container bg_d">
 
 			<div class="row">
 				<h3 class="col-sm-12">Web Console</h3>
 			</div>
 
-			<div class="row pad" ng-controller="clidb.ConsoleController">
+			<div class="row pad ng-cloak" ng-controller="clidb.ConsoleController">
 				<ul class="col-xs-12">
 					<li style="list-style:none;" class="pad">
 						<form class="form-horizontal" role="form" ng-submit="submit(cmd)">
 							<input type="text" class="form-control bg_d bd_lead_d lead_d" ng-model="cmd" ng-keydown="inpKeyDown($event.keyCode)" >
 						</form>
 					</li>
-					<li style="list-tsyle:none;" ng-repeat="(key, value) in commands | orderBy: '-idx' | limitTo: 20">
-							<div class="text-primary">&gt;  {{value.cmd}}</div>
-							<div class="text-success">{{value.reply}}</div>
-							<div class="text-danger">{{value.err}}</div>
+					<li style="list-tsyle:none;" ng-repeat="(key, value) in commands | orderObjectBy:'idx':false| limitTo: 20">
+							<div class="text-primary">&gt;  {{value.cmd}} <small class="text-muted">{{value.idx | date:'yyyy-MM-dd HH:mm:ss'}}</small></div>
+							<pre ng-show="!value.err" class="text-success bg_d bd_bg_d">{{value.reply | pp}}</pre>
+							<pre ng-show="value.err" class="text-danger bg_d bd_bg_d">{{value.err}}</pre>
 					</li>
 				</ul>
 			</div>
 
 		</div>
 		
-		<div ng-controller="UserController" class="navbar-fixed-bottom pad padright padleft bg_d">
+		<div ng-controller="UserController" class="navbar-fixed-bottom pad padright padleft bg_d ng-cloak">
 			<div class="pull-left ng-cloak">
 				<a href="/"><icom class="icon-home icon-2x"></icom></a>
 				{{user.displayName}}

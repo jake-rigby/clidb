@@ -28,14 +28,14 @@ module.exports.connect = function(namespace, redis, socket) {
 
 	socket.on('clidb.setitem', function(classkey, itemkey, item, qid) {
 		cli.setitem(classkey, itemkey, item, function(err, result) {
-			socket.emit('clidb.setitem', err, Boolean(result), qid);
+			socket.emit('clidb.setitem', err, result, qid);
 			if (err) console.log(err);
 		});
 	});
 
 	socket.on('clidb.getclass',function(classkey, qid) {
-		cli.getclass(classkey, function(classkey, value, err) {
-			socket.emit('clidb.class', err,{classkey:classkey, value:value}, qid);
+		cli.getclass(classkey, function(err, value) {
+			socket.emit('clidb.class', err, classkey, value, qid);
 			if (err) console.log(err);	
 		});
 	});

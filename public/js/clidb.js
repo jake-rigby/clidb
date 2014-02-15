@@ -10,14 +10,17 @@ angular.module('clidb',[])
 	// load local api schema to validate command strings
 	$http.get('schemas/api.json').then(function(result){
 		tv4.addSchema('api',result.data);
-	})
+	});
 
 	service.api = {
 
-		getc : function(classkey, itmkey, qid) {
-			var cached = service.data[cls][key];
-			if (!cached) service.api.get(cls, key);
-			else linkExpression(null, cached, qid);
+		getc : function(classkey, itemkey, qid) {
+			try {
+				var cached = service.data[classkey][itemkey];
+			//if (!cached) service.api.get(classkey, itemkey);
+			} catch (e) {
+				linkExpression('not in cache', null, qid); 
+			}
 		},
 
 		get : function(classkey, itemkey, qid) {
@@ -46,12 +49,51 @@ angular.module('clidb',[])
 		},
 
 		schema : function(schemaName, qid) {
-			// TODO
+			var schema = tv4.getSchema(schemaName);
+			linkExpression(tv4.error ? tv4.error : schema ? null : 'unknown schema id', schema, qid);
 		},
 
 		edit : function(classkey, itemkey) {
 			// TODO
 		}
+	}
+
+	service.callbacks = {
+
+		getc :  function(err, result, id) {
+			service.commands[id].reply = angular.fromJson(result);
+		},
+
+		get :  function(err, result, id) {
+			service.commands[id].reply = angular.fromJson(result);
+		},
+
+		dlt : function(err, result, id) {
+			service.commands[id].reply = result;
+		},
+
+		set : function(err, result, id) {
+			service.commands[id].reply = angular.fromJson(result);
+		},
+
+		new : function(err, result, id) {
+			service.commands[id].reply = result;
+		},
+
+		list : function(err, result, id) {
+			var reply = [],
+				list = parseJSONArray(result);
+			for (var key in list) reply.push(key);
+			service.commands[id].reply = reply;
+		},
+
+		schema : function(err, result, id) {
+			service.commands[id].reply = angular.fromJson(result);
+		},
+
+		edit : function(err, result, id) {
+		}
+
 	}
 
 
@@ -86,10 +128,12 @@ angular.module('clidb',[])
 	});
 	
 
-	socketio.on('clidb.class',function(err, data, qid){
+	socketio.on('clidb.class',function(err, classkey, value, qid){
+		console.log(arguments)
 		$rootScope.$apply(function(){
-			service.data[data.classkey] = parseJSONArray(data.value);
-			if (qid) linkExpression(err, data, qid);
+			if (!value || !classkey) return linkExpression('not found', null, qid);
+			service.data[classkey] = parseJSONArray(value); // < **** THIS IS NOT CACHEING ANYMORE, BECAUSE I AM NOT PASSING THE CLASSKEY BACK ANYMORE - JUST THE RESULT
+			if (qid) linkExpression(err, value, qid);
 		});
 	});
 
@@ -97,6 +141,7 @@ angular.module('clidb',[])
 	socketio.on('clidb.item',function(err, data, qid){
 		$rootScope.$apply(function() {
 			if (data) {
+				if (!data.classkey) return linkExpression('not found', null, qid);
 				if (!service.data[data.classkey]) service.data[data.classkey] = {};
 				service.data[data.classkey][data.itemkey] = data.value;
 			}
@@ -126,26 +171,27 @@ angular.module('clidb',[])
 	 * callbacks are indexed via this id
 	 */
 	
-	service.commands = [];
+	service.commands = {};
 	var callbacks = {};
 
 	service.eval = function(x, cb) {
 
-		// index the callback 
-		var id = String(service.commands.length);
-		service.commands.push({cmd: x, idx: id});
-		callbacks[id] = cb;
-
 		// http://stackoverflow.com/questions/10530532/regexp-to-split-by-white-space-with-grouping-quotes
 		var words = [];
 		x.replace(/"([^"]*)"|'([^']*)'|(\S+)/g, function(g0,g1,g2,g3){
-            words.push(g1 || g2 || g3 || '');
-        });
+			words.push(g1 || g2 || g3 || '');
+		});
 
 		// validate the command via its schema
-		var op = service.api[words[0]];
-		var schm = tv4.getSchema('api#'+words[0]);
+		var cmd = words[0],
+			op = service.api[cmd],
+			schm = tv4.getSchema('api#'+words[0]),
+			id = Date.now();//String(service.commands.length); // <-- change to timestamp
 		words[0] = 'clidb.' + words[0];
+
+		// index the callback 
+		service.commands[id] = {cmd: x, idx: id};
+		callbacks[id] = service.callbacks[cmd];
 
 		if (op && schm && tv4.validate(words.slice(1), schm)) {
 		
@@ -155,10 +201,11 @@ angular.module('clidb',[])
 		} else {
 		
 			var err = schm ?
-				tv4.error.message :
-				'unknown command : '+ words[0];
+				tv4.error.message : 'unknown command : '+words[0];
 			linkExpression(err, null, id);
 		}
+
+		return id;
 	}
 
 	/**
@@ -166,10 +213,9 @@ angular.module('clidb',[])
 	 */
 	function linkExpression(err, reply, id) {
 		var idx = Number(id);
-		service.commands[id].reply = reply;
 		service.commands[id].err = err;
 		if (callbacks[id]) {
-			callbacks[id](err, reply);
+			callbacks[id](err, reply, id);
 			delete callbacks[id];
 		}
 	}
@@ -195,15 +241,26 @@ angular.module('clidb',[])
 		} else if (s.type=='object'){
 			var r = {};
 			for (var p in s.properties){
-				console.log(s.properties[p].$ref)
-				if (s.properties[p].type=='object') r[p] = resolve(s.properties[p]);
-				else if (s.properties[p].type=='number') r[p] = 0;
-				else if (s.properties[p].type=='array') r[p] = resolve(s.properties[p]);
-				else if (s.properties[p].type=='string') r[p]='';
-				else if (s.properties[p].$ref && tv4.getSchema(s.properties[p].$ref)) {
+				
+				if (s.properties[p].type=='object') {
+					r[p] = resolve(s.properties[p]);
+					
+				} else if (s.properties[p].type=='number') {
+					r[p] = 0;
+
+				} else if (s.properties[p].type=='array') {
+					r[p] = resolve(s.properties[p]);
+
+				} else if (s.properties[p].type=='string') {
+					r[p]='';
+
+				} else if (s.properties[p].$ref && tv4.getSchema(s.properties[p].$ref)) {
 					r[p] = resolve(tv4.getSchema(s.properties[p].$ref));
-				} 
-				else r[p] = null;
+
+				} else {
+					r[p] = null;
+
+				}
 				//else if schemas[s.properties[p].type] r[p] = resolve(schemas[s.properties[p].type]); // <-- search referenced schemas here
 			}
 			return r
@@ -220,25 +277,29 @@ angular.module('clidb',[])
 .controller('clidb.ConsoleController',['$scope', 'db', function($scope, db) {
 
 	var idx = 0;
+	var list = [];
 
 	$scope.submit = function(entry){
-		db.eval(entry, function(err, result) {
-			console.log(entry, '-->', err, result);
-		});
+		var qid = db.eval(entry);
+		list.push(qid);
 		$scope.cmd = null;
-		idx = $scope.commands.length;
+		idx = list.length;
 	}
 
 	/**
 	 * use  ng-keydown="inpKeyDown($event.keyCode)"
 	 */
 	$scope.inpKeyDown = function(keyCode){
-		if (keyCode==38 && idx == $scope.commands.length - 1) {
-			$scope.cmd = ''; idx = $scope.commands.length;
-		} else if (keyCode==38 && idx < $scope.commands.length - 1) {
-			$scope.cmd = $scope.commands[++idx].cmd;
+		if (keyCode==38 && idx == list.length - 1) {
+			$scope.cmd = ''; 
+			idx = list.length;
+
+		} else if (keyCode==38 && idx < list.length - 1) {
+			$scope.cmd = $scope.commands[list[++idx]].cmd;
+
 		} else if (keyCode==40 && idx > 0) {
-			$scope.cmd = $scope.commands[--idx].cmd;
+			$scope.cmd = $scope.commands[list[--idx]].cmd;
+
 		}
 	}
 
@@ -246,8 +307,17 @@ angular.module('clidb',[])
 		return db.commands;
 	},function(commands){
 		$scope.commands = commands;
+		list = [];
+		for (var key in commands) list.push(key);
+		list.sort();
 	});
 
 
 }])
+
+.filter('pp', function() {
+	return function(data) {
+		return angular.toJson(data, true);
+	}
+})
 

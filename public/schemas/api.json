@@ -1,7 +1,20 @@
 {
     "$schema": "http://json-schema.org/schema#",
+    "id": "#api",
 	"type": "object",
-	"properties": {
+	"definitions": {
+
+		"getc": {
+			"id": "#getc",
+			"type": "array",
+			"items": [
+				{"type": "string"},
+				{"type": "string"}
+			],
+			"minItems": 2,
+			"maxItems": 2
+		},
+
 		"get": {
 			"id": "#get",
 			"type": "array",
@@ -12,6 +25,7 @@
 			"minItems": 2,
 			"maxItems": 2
 		},
+
 		"set": {
 			"type": "object",
 			"id": "#set",
@@ -24,6 +38,7 @@
 			"minItems": 3,
 			"maxItems": 3
 		},
+
 		"dlt": {
 			"type": "object",
 			"id": "#dlt",
@@ -35,6 +50,7 @@
 			"minItems": 2,
 			"maxItems": 2
 		},
+
 		"new": {
 			"type": "object",
 			"id": "#new",
@@ -46,6 +62,7 @@
 			"minItems": 2,
 			"maxItems": 2
 		},
+
 		"list": {
 			"type": "object",
 			"id": "#list",
@@ -55,6 +72,27 @@
 			],
 			"minItems": 1,
 			"maxItems": 1
+		},
+
+		"schema": {
+			"type": "object",
+			"id": "#schema",
+			"type": "array",
+			"items": [
+				{"type": "string"}
+			],
+			"minItems": 1,
+			"maxItems": 1
+		},
+		
+		"help": {
+			"type": "object",
+			"id": "#help",
+			"type": "array",
+			"items": [
+				{"type": "string"}
+			],
+			"maxItems": 0
 		}
 
 	}
