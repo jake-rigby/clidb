@@ -15,12 +15,15 @@ angular.module('clidb',[])
 	service.api = {
 
 		getc : function(classkey, itemkey, qid) {
+			console.log(service.data);
+			var err, value;
 			try {
-				var cached = service.data[classkey][itemkey];
-			//if (!cached) service.api.get(classkey, itemkey);
+				value = service.data[classkey][itemkey];
 			} catch (e) {
-				linkExpression('not in cache', null, qid); 
+				//if (!cached) service.api.get(classkey, itemkey);
+				err = 'not cached';
 			}
+			linkExpression(err, value, qid); 
 		},
 
 		get : function(classkey, itemkey, qid) {
@@ -138,14 +141,11 @@ angular.module('clidb',[])
 	});
 
 
-	socketio.on('clidb.item',function(err, data, qid){
+	socketio.on('clidb.item',function(err, classkey, itemkey, value, qid){
 		$rootScope.$apply(function() {
-			if (data) {
-				if (!data.classkey) return linkExpression('not found', null, qid);
-				if (!service.data[data.classkey]) service.data[data.classkey] = {};
-				service.data[data.classkey][data.itemkey] = data.value;
-			}
-			if (qid) linkExpression(err, data, qid);
+			if (!service.data[classkey]) service.data[classkey] = {};
+			service.data[classkey][itemkey] = value;
+			if (qid) linkExpression(err, value, qid);
 		}, true);
 	});
 

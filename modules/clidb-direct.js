@@ -32,7 +32,7 @@ module.exports.connect = function(namespace, redis, socket) {
 
 		getitem : function(classkey,itemkey,cb){
 			redis.hget(namespace+':clidb:'+classkey,itemkey,function(err,item){
-				cb(item ? err : 'no value', item);
+				cb(item ? err : 'no value', item); // <-- redis doesn't generate errors for null queries
 			});
 		},
 
