@@ -27,7 +27,6 @@
 		},
 
 		"set": {
-			"type": "object",
 			"id": "#set",
 			"type": "array",
 			"items": [
@@ -40,7 +39,6 @@
 		},
 
 		"dlt": {
-			"type": "object",
 			"id": "#dlt",
 			"type": "array",
 			"items": [
@@ -52,7 +50,6 @@
 		},
 
 		"new": {
-			"type": "object",
 			"id": "#new",
 			"type": "array",
 			"items": [
@@ -64,7 +61,6 @@
 		},
 
 		"list": {
-			"type": "object",
 			"id": "#list",
 			"type": "array",
 			"items": [
@@ -75,7 +71,6 @@
 		},
 
 		"schema": {
-			"type": "object",
 			"id": "#schema",
 			"type": "array",
 			"items": [
@@ -86,13 +81,7 @@
 		},
 		
 		"help": {
-			"type": "object",
-			"id": "#help",
-			"type": "array",
-			"items": [
-				{"type": "string"}
-			],
-			"maxItems": 0
+			"id": "#help"
 		}
 
 	}

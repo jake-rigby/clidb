@@ -7,20 +7,14 @@ angular.module('clidb',[])
 	// cache
 	var service = { data: {} };
 
-	// load local api schema to validate command strings
-	$http.get('schemas/api.json').then(function(result){
-		tv4.addSchema('api',result.data);
-	});
 
 	service.api = {
 
 		getc : function(classkey, itemkey, qid) {
 			console.log(service.data);
 			var err, value;
-			try {
-				value = service.data[classkey][itemkey];
-			} catch (e) {
-				//if (!cached) service.api.get(classkey, itemkey);
+			try { value = service.data[classkey][itemkey] } catch (e) {
+				//if (!cached) service.api.get(classkey, itemkey); // <-- get and getc sould be combined for release, but we want to test the cache for now
 				err = 'not cached';
 			}
 			linkExpression(err, value, qid); 
@@ -57,7 +51,13 @@ angular.module('clidb',[])
 		},
 
 		edit : function(classkey, itemkey) {
-			// TODO
+			// TODO - launch a json schema generated form
+		},
+
+		help : function(qid) {
+			var result = [];
+			for (var api in tv4.getSchema('api').definitions) result.push(api);
+			linkExpression(tv4.error, result, qid);
 		}
 	}
 
@@ -94,7 +94,8 @@ angular.module('clidb',[])
 			service.commands[id].reply = angular.fromJson(result);
 		},
 
-		edit : function(err, result, id) {
+		help : function(err, result, id) {
+			service.commands[id].reply = result;
 		}
 
 	}
@@ -110,6 +111,10 @@ angular.module('clidb',[])
 	});
 
 
+	/**
+	 * add class schemas from the server
+	 * api schemas are loaded using api#<command> to avoid conflict
+	 */
 	socketio.on('clidb.schema',function(err, id, schema){
 
 		// add the root
@@ -132,10 +137,9 @@ angular.module('clidb',[])
 	
 
 	socketio.on('clidb.class',function(err, classkey, value, qid){
-		console.log(arguments)
 		$rootScope.$apply(function(){
 			if (!value || !classkey) return linkExpression('not found', null, qid);
-			service.data[classkey] = parseJSONArray(value); // < **** THIS IS NOT CACHEING ANYMORE, BECAUSE I AM NOT PASSING THE CLASSKEY BACK ANYMORE - JUST THE RESULT
+			service.data[classkey] = parseJSONArray(value);
 			if (qid) linkExpression(err, value, qid);
 		});
 	});
@@ -172,6 +176,7 @@ angular.module('clidb',[])
 	 */
 	
 	service.commands = {};
+
 	var callbacks = {};
 
 	service.eval = function(x, cb) {
@@ -189,11 +194,13 @@ angular.module('clidb',[])
 			id = Date.now();//String(service.commands.length); // <-- change to timestamp
 		words[0] = 'clidb.' + words[0];
 
+		console.log(cmd, schm, tv4.validate(words.slice(1), schm))
+
 		// index the callback 
 		service.commands[id] = {cmd: x, idx: id};
 		callbacks[id] = service.callbacks[cmd];
 
-		if (op && schm && tv4.validate(words.slice(1), schm)) {
+		if (op && schm && tv4.validate(words.slice(1), schm)) { // <-- won't validate zero alength arrays
 		
 			words.push(id);
 			op.apply(service.eval, words.slice(1));
@@ -267,6 +274,11 @@ angular.module('clidb',[])
 		} 
 		else return 'example <'+s.type+'>';	
 	}
+
+	// load local api schema to validate command strings
+	$http.get('schemas/api.json').then(function(result){
+		tv4.addSchema('api',result.data);
+	});
 
 
 	return service;
