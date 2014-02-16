@@ -1,13 +1,24 @@
 'use-strict';
 
-angular.module('clidb',[])
+angular.module('clidb',['ng-schema'])
 
 .factory('db', ['$rootScope', 'socket.io', '$http', function($rootScope, socketio, $http) {
 	
 	// cache
 	var service = { data: {} };
 
+	/**
+	 * an api can comprise of 4 parts :
+	 * 
+	 * 1) an entrey in the api.json schema describing the parameters
+	 * 2) a call method within the aip object
+	 * 3) a callback method in the callbacks object
+	 * 4) a socekt listener for server responses, which will retrieve the index command object
+	 */
 
+	/**
+	 * api object
+	 */
 	service.api = {
 
 		getc : function(classkey, itemkey, qid) {
@@ -54,33 +65,48 @@ angular.module('clidb',[])
 			// TODO - launch a json schema generated form
 		},
 
-		help : function(qid) {
+		help : function() {
+			console.log();
 			var result = [];
 			for (var api in tv4.getSchema('api').definitions) result.push(api);
-			linkExpression(tv4.error, result, qid);
+			linkExpression(tv4.error, result, arguments[arguments.length-1]);
 		}
 	}
 
+	/**
+	 * callbacks object
+	 */
 	service.callbacks = {
 
 		getc :  function(err, result, id) {
-			service.commands[id].reply = angular.fromJson(result);
+			try { service.commands[id].reply = angular.fromJson(result); } catch (e) {
+				service.commands[id].reply = result;
+			}
+			service.commands[id].err = err;
 		},
 
 		get :  function(err, result, id) {
-			service.commands[id].reply = angular.fromJson(result);
+			try { service.commands[id].reply = angular.fromJson(result); } catch (e) {
+				service.commands[id].reply = result;
+			}
+			service.commands[id].err = err;
 		},
 
 		dlt : function(err, result, id) {
 			service.commands[id].reply = result;
+			service.commands[id].err = err;
 		},
 
 		set : function(err, result, id) {
-			service.commands[id].reply = angular.fromJson(result);
+			try { service.commands[id].reply = angular.fromJson(result); } catch (e) {
+				service.commands[id].reply = result;
+			}
+			service.commands[id].err = err;
 		},
 
 		new : function(err, result, id) {
 			service.commands[id].reply = result;
+			service.commands[id].err = err;
 		},
 
 		list : function(err, result, id) {
@@ -88,20 +114,28 @@ angular.module('clidb',[])
 				list = parseJSONArray(result);
 			for (var key in list) reply.push(key);
 			service.commands[id].reply = reply;
+			service.commands[id].err = err;
 		},
 
 		schema : function(err, result, id) {
 			service.commands[id].reply = angular.fromJson(result);
+			service.commands[id].err = err;
 		},
 
 		help : function(err, result, id) {
 			service.commands[id].reply = result;
+			service.commands[id].err = err;
+		},
+
+		edit : function(err, result, id) {
+			service.commands[id].reply = result;
+			service.commands[id].err = err;			
 		}
 
 	}
 
 
-	/**
+	/*
 	 * socket listeners
 	 */
 
@@ -111,20 +145,13 @@ angular.module('clidb',[])
 	});
 
 
-	/**
-	 * add class schemas from the server
-	 * api schemas are loaded using api#<command> to avoid conflict
-	 */
-	socketio.on('clidb.schema',function(err, id, schema){
-
-		// add the root
+	socketio.on('clidb.schema',function(err, id, schema, qid){
 		schema = JSON.parse(schema);
-		tv4.addSchema(schema);
-
-		// also add the definitions
+		tv4.addSchema(id, schema);
 		for (var def in schema.definitions) {
 			tv4.addSchema(def,schema.definitions[def]);
 		}
+		if (qid) linkExpression(err, value, qid);
 	});
 	
 
@@ -192,23 +219,21 @@ angular.module('clidb',[])
 			op = service.api[cmd],
 			schm = tv4.getSchema('api#'+words[0]),
 			id = Date.now();//String(service.commands.length); // <-- change to timestamp
-		words[0] = 'clidb.' + words[0];
-
-		console.log(cmd, schm, tv4.validate(words.slice(1), schm))
+		words = words.slice(1);
 
 		// index the callback 
 		service.commands[id] = {cmd: x, idx: id};
 		callbacks[id] = service.callbacks[cmd];
 
-		if (op && schm && tv4.validate(words.slice(1), schm)) { // <-- won't validate zero alength arrays
+		if (op && schm && tv4.validate(words, schm)) { // <-- won't validate zero alength arrays
 		
 			words.push(id);
-			op.apply(service.eval, words.slice(1));
+			op.apply(service.eval, words);
 		
 		} else {
 		
 			var err = schm ?
-				tv4.error.message : 'unknown command : '+words[0];
+				tv4.error.message : 'unknown command : '+ cmd;
 			linkExpression(err, null, id);
 		}
 
@@ -219,11 +244,12 @@ angular.module('clidb',[])
 	 * link async results to cached commands and their callbacks
 	 */
 	function linkExpression(err, reply, id) {
-		var idx = Number(id);
-		service.commands[id].err = err;
 		if (callbacks[id]) {
 			callbacks[id](err, reply, id);
 			delete callbacks[id];
+		} else if (service.commands[id]) {
+			service.commands[id].err = err;
+			service.commands[id].reply = reply;
 		}
 	}
 
@@ -250,21 +276,27 @@ angular.module('clidb',[])
 			for (var p in s.properties){
 				
 				if (s.properties[p].type=='object') {
+
 					r[p] = resolve(s.properties[p]);
 					
 				} else if (s.properties[p].type=='number') {
+
 					r[p] = 0;
 
 				} else if (s.properties[p].type=='array') {
+
 					r[p] = resolve(s.properties[p]);
 
 				} else if (s.properties[p].type=='string') {
+
 					r[p]='';
 
 				} else if (s.properties[p].$ref && tv4.getSchema(s.properties[p].$ref)) {
+
 					r[p] = resolve(tv4.getSchema(s.properties[p].$ref));
 
 				} else {
+
 					r[p] = null;
 
 				}
@@ -302,14 +334,18 @@ angular.module('clidb',[])
 	 * use  ng-keydown="inpKeyDown($event.keyCode)"
 	 */
 	$scope.inpKeyDown = function(keyCode){
+
 		if (keyCode==38 && idx == list.length - 1) {
+
 			$scope.cmd = ''; 
 			idx = list.length;
 
 		} else if (keyCode==38 && idx < list.length - 1) {
+
 			$scope.cmd = $scope.commands[list[++idx]].cmd;
 
 		} else if (keyCode==40 && idx > 0) {
+
 			$scope.cmd = $scope.commands[list[--idx]].cmd;
 
 		}

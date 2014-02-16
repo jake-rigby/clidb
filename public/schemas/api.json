@@ -81,7 +81,13 @@
 		},
 		
 		"help": {
-			"id": "#help"
+			"id": "#help",
+			"type": "array",
+			"items": {
+				"type": "string"
+			},
+			"minItems": 0,
+			"maxItems": 0
 		}
 
 	}
