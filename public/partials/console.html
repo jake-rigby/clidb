@@ -1,0 +1,22 @@
+<div class="container bg_d bd_lead_d lead_d">
+	
+	<div class="row">
+		<h3 class="col-sm-12">Web Console</h3>
+	</div>
+
+	<div class="row pad ng-cloak">
+		<ul class="col-xs-12">
+			<li style="list-style:none;" class="pad">
+				<form class="form-horizontal" role="form" ng-submit="submit(cmd)">
+					<input type="text" class="form-control bg_d bd_lead_d lead_d" ng-model="cmd" ng-keydown="inpKeyDown($event.keyCode)" >
+				</form>
+			</li>
+			<li style="list-tsyle:none;" ng-repeat="(key, value) in commands | orderObjectBy:'idx':false| limitTo: 20">
+					<div class="text-primary">&gt;  {{value.cmd}} <small class="text-muted">{{value.idx | date:'yyyy-MM-dd HH:mm:ss'}}</small></div>
+					<pre ng-show="!value.err" class="text-success bg_d bd_bg_d">{{value.reply | pp}}</pre>
+					<pre ng-show="value.err" class="text-danger bg_d bd_bg_d">{{value.err}}</pre>
+			</li>
+		</ul>
+	</div>
+
+</div>

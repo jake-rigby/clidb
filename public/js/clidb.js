@@ -1,6 +1,6 @@
 'use-strict';
 
-angular.module('clidb',['ng-schema'])
+angular.module('clidb.services-controllers',[])
 
 .factory('db', ['$rootScope', 'socket.io', '$http', function($rootScope, socketio, $http) {
 	
@@ -10,7 +10,7 @@ angular.module('clidb',['ng-schema'])
 	/**
 	 * an api can comprise of 4 parts :
 	 * 
-	 * 1) an entrey in the api.json schema describing the parameters
+	 * 1) an entry in the api.json schema describing the parameters
 	 * 2) a call method within the aip object
 	 * 3) a callback method in the callbacks object
 	 * 4) a socekt listener for server responses, which will retrieve the index command object
@@ -45,7 +45,7 @@ angular.module('clidb',['ng-schema'])
 
 		new : function(classkey, itemkey, qid) {
 			var definition = tv4.getSchema(classkey),
-				instance = resolve(definition);
+				instance = create(definition);
 			if (!instance) return linkExpression('unable to create '+classkey, null, qid);
 			var valid = tv4.validate(instance,definition);
 			if (valid) socketio.emit('clidb.setitem', classkey, itemkey, instance, qid);
@@ -266,18 +266,18 @@ angular.module('clidb',['ng-schema'])
 	/**
 	 * create a minimal instance described by a schema
 	 */
- 	function resolve(s) {
+ 	function create(s) {
  		if (!s) {
  			return null
  		} else if (s.type=='array'){
-			return [];//[resolve(s.items)];
+			return [];//[create(s.items)];
 		} else if (s.type=='object'){
 			var r = {};
 			for (var p in s.properties){
 				
 				if (s.properties[p].type=='object') {
 
-					r[p] = resolve(s.properties[p]);
+					r[p] = create(s.properties[p]);
 					
 				} else if (s.properties[p].type=='number') {
 
@@ -285,7 +285,7 @@ angular.module('clidb',['ng-schema'])
 
 				} else if (s.properties[p].type=='array') {
 
-					r[p] = resolve(s.properties[p]);
+					r[p] = create(s.properties[p]);
 
 				} else if (s.properties[p].type=='string') {
 
@@ -293,14 +293,14 @@ angular.module('clidb',['ng-schema'])
 
 				} else if (s.properties[p].$ref && tv4.getSchema(s.properties[p].$ref)) {
 
-					r[p] = resolve(tv4.getSchema(s.properties[p].$ref));
+					r[p] = create(tv4.getSchema(s.properties[p].$ref));
 
 				} else {
 
 					r[p] = null;
 
 				}
-				//else if schemas[s.properties[p].type] r[p] = resolve(schemas[s.properties[p].type]); // <-- search referenced schemas here
+				//else if schemas[s.properties[p].type] r[p] = create(schemas[s.properties[p].type]); // <-- search referenced schemas here
 			}
 			return r
 		} 
@@ -362,6 +362,36 @@ angular.module('clidb',['ng-schema'])
 
 
 }])
+/*
+.factory('form',['db','$rootScope', function(db, $rootScope) {
+
+	var service = {},
+
+	service.obj = {};
+
+	service.schema = {};
+
+	service.set = function(obj, schema) {
+		$rootScope.$apply(function() {
+			service.obj = obj;
+			service.schema = schema;
+		}, true);
+	}
+}])
+*/
+.controller('clidb.FormController', ['$scope', '$routeParams', function($scope, $routParams) {
+
+	$scope.$watch(function(){
+		return form.obj;
+	},function(commands){
+		$scope.commands = commands;
+		list = [];
+		for (var key in commands) list.push(key);
+		list.sort();
+	});
+
+}])
+
 
 .filter('pp', function() {
 	return function(data) {
