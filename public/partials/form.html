@@ -1,5 +1,62 @@
-{{key}}
+<div class="container bg_d bd_lead_d lead_d ng-cloak">
+	
+	<div class="row">
+		<div class="col-xs-12">
+			<h3 class="text-muted">Editing {{key}} ({{schemaName}})</h3>
+		</div>
+	</div>
 
-{{schema}}
 
-<pre>{{obj | pp}}</pre>
+	<div class="form-horizontal" role="form">
+
+		<ul>
+			<li ng-repeat="item in items">
+				
+				<!-- array (showuldn't happen as we flattened it) -->
+				<div ng-show="item.type == 'array'" class="form-group">
+					<label class="control-label" ng-click="delete(item)">&times;</label>
+				</div>
+				
+				<!-- string -->
+				<div ng-show="item.type == 'string' || item.type=='number'" class="form-group">
+
+					<label for="item.id" class="col-sm-3 control-label">{{item.title}}</label>
+					<div class="col-sm-9">
+						<input type="{{item.type}}" id="item.id" class="form-control" ng-model="obj[item.title]" ng-show="!item.index &amp;&amp; item.index != 0" >
+						<input type="text" id="item.id" class="form-control" ng-model="obj[item.title][item.index]" ng-show="item.index || item.index == 0" >
+					</div>
+				</div>
+
+				
+				<!-- object (showuldn't happen as we flattened it) 
+				<div ng-show="item.type == 'object'" class="form-group">
+
+				</div>
+				-->
+
+			</li>
+			<li>
+				<div class=" form-group">
+					<div class="col-sm-offset-3 col-sm-9 text-right">
+						<button class="btn btn-success" ng-click="save()">save</button>
+					</div>
+				</div>
+			</li>
+		</ul>
+
+
+	</div>
+
+
+	<div class="row pad">
+		<div class="col-xs-6">
+			Schema
+			<pre class="bg_d lead_d">{{schema | pp}}</pre>
+		</div>
+		<div class="col-xs-6">
+			Data
+			<pre class="bg_d lead_d">{{obj | pp}}</pre>
+		</div>
+	</div>
+
+</div>

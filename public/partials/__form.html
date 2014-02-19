@@ -1,0 +1,110 @@
+<div class="container bg_d bd_lead_d lead_d">
+	
+	<div class="row">
+		<div class="col-xs-12">
+			<h3 >Edit Item</h3>
+			<h4 class="text-muted">{{schema}} - {{key}}</h4>
+		</div>
+	</div>
+
+	<div class="row pad ng-cloak">
+		<div class="col-xs-12">
+			<pre class="bg_d bd_bg_d lead_d">{{obj | pp}}</pre>
+		</div>
+	</div>
+
+	<!-- TODO : flatten the obj in the scope so we can write out all its props using something like what follows -->
+
+	<div class="pad">
+		<ul>
+			<!-- 
+			the root property is an object 
+			-->	
+			<li style="list-style:none;" ng-repeat="property in properties | orderBy:'prop':false">
+				<form class="form-horizontal" role="form" ng-submit="submitChange(property.prop,property.val)">
+					<div class="form-group">
+						
+						<!-- delete button -->
+						<div class="col-xs-1">
+							<label class="control-label" ng-show="schema.type=='array'||schema.type=='anon'||address.length==1" ng-click="remove(property.prop)">&times;</label>
+						</div>
+						
+						<!-- property name -->
+						<label for="{{property.prop}}" class="col-xs-2 control-label" ng-click="search(property)">{{property.prop}}</label>
+
+						<!-- value input field (click will load options if the field is a $ref ) -->
+						<div class="col-xs-8" ng-show="property.schema.type=='string' || property.schema.type=='anon' || property.schema.type=='number' || property.schema.ref &amp;&amp; selected!=property.prop">
+							<input type="text" class="form-control" id="{{property.prop}}" ng-model="property.val" value="{{property.val}}" ng-click="loadOptions(property.prop)" >
+						</div>
+
+						<!-- buttons for each member of a foreign class from loadOptions-->
+						<div class="btn-group col-xs-8" ng-show="foreignClass &amp;&amp; selected == property.prop">
+							<button type="button" class="btn btn-default" ng-repeat="(key, value) in foreignClass" ng-click="submitChange(property.prop,key)">{{key}}</button>
+							<button type="button" class="btn btn-default" ng-click="openNewItemModal(property.prop)"><icon class="icon-plus"></icon></button>
+						</div>
+
+						<!-- An error alert -->
+						<div class="col-xs-8" ng-show="property.error">
+							<div class="form-control" id="{{property.prop}}">ERROR : {{property.error.message}} (value:{{property.val}}, type:{{property.type}})</div>
+						</div>
+
+						<div class="col-xs-1" ng-click="search(property)"><label class="control-label">►</label></div>
+					</div>
+				</form>
+			</li>
+		
+			<!-- 
+			the root property is an array 
+			-->	
+			<li style="list-style:none;" ng-show="schema.type=='array'">
+
+				<!-- the array items are primitive values -->
+				<form class="form-horizontal" role="form" ng-submit="addlistitem(newvalue)" ng-show="schema.items.type!='object' &amp;&amp; !(foreignClass &amp;&amp; !selected)">
+					<div class="form-group">
+						<label for="newElementInp" class="col-xs-3 control-label"> </label>
+						<div class="col-xs-8">
+							<input id="newElementInp" type="text" ng-model="newvalue" placeholder="new item" class="form-control" ng-click="loadOptions()">
+						</div>
+					</div>
+				</form>
+				
+				<form class="form-horizontal" role="form" ng-show="schema.items.type=='object'">
+					<div class="form-group">
+						<label for="newItemBtn" class="col-xs-3 control-label"> </label>
+						<div class="col-xs-8">
+							<div id="newItemBtn" class="btn btn-default form-control" ng-click="createlistitem()">new</div>
+						</div>
+					</div>
+				</form>
+				
+				<form class="form-horizontal" role="form" ng-show="foreignClass &amp;&amp; !selected">
+					<div class="form-group">
+						<label for="newItemBtn" class="col-xs-3 control-label"> </label>
+						<div class="col-xs-8">
+							<div class="btn-group">
+							<button type="button" class="btn btn-default" ng-model="newkey" ng-click="addlistitem(key)" ng-repeat="(key, value) in foreignClass">{{key}}</button>
+							</div>
+						</div>
+					</div>
+				</form>
+
+			</li>
+
+			<li style="list-style:none;" ng-show="address.length==1">
+
+				<form class="form-horizontal" role="form" ng-submit="createhashitem(newname)">
+					<div class="form-group">
+						<label for="newElementInp" class="col-xs-3 control-label"> </label>
+						<div class="col-xs-8">
+							<input id="newElementInp" type="text" ng-model="newname" placeholder="new item" class="form-control" ng-click="loadOptions()">
+						</div>
+					</div>
+				</form>
+			</li>
+		</ul>
+	</div>
+
+
+
+
+</div>

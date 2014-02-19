@@ -40,6 +40,7 @@ angular.module('clidb.services-controllers',[])
 		},
 
 		set : function(classkey, itemkey, value, qid) {
+			console.log(arguments);
 			socketio.emit('clidb.setitem', classkey, itemkey, value, qid);
 		},
 
@@ -48,7 +49,10 @@ angular.module('clidb.services-controllers',[])
 				instance = create(definition);
 			if (!instance) return linkExpression('unable to create '+classkey, null, qid);
 			var valid = tv4.validate(instance,definition);
-			if (valid) socketio.emit('clidb.setitem', classkey, itemkey, instance, qid);
+			if (valid) {
+				socketio.emit('clidb.setitem', classkey, itemkey, instance, qid);
+				service.api.edit(classkey, itemkey, qid);
+			}
 			else linkExpression(tv4.error, null, qid);
 		},
 
@@ -62,7 +66,7 @@ angular.module('clidb.services-controllers',[])
 		},
 
 		edit : function(classkey, itemkey, qid) {
-			$location.path('/form').search({obj:itemkey, schema:classkey, qid:qid});
+			$location.path('/form').search({key:itemkey, schema:classkey, qid:qid});
 		},
 
 		help : function() {
@@ -270,7 +274,8 @@ angular.module('clidb.services-controllers',[])
  		if (!s) {
  			return null
  		} else if (s.type=='array'){
-			return [];//[create(s.items)];
+			//return [];
+			return [create(s.items), create(s.items)];
 		} else if (s.type=='object'){
 			var r = {};
 			for (var p in s.properties){
@@ -362,38 +367,115 @@ angular.module('clidb.services-controllers',[])
 
 
 }])
-/*
-.factory('form',['db','$rootScope', function(db, $rootScope) {
-
-	var service = {},
-
-	service.obj = {};
-
-	service.schema = {};
-
-	service.set = function(obj, schema) {
-		$rootScope.$apply(function() {
-			service.obj = obj;
-			service.schema = schema;
-		}, true);
-	}
-}])
-*/
-.controller('clidb.FormController', ['$scope', '$routeParams', 'db', function($scope, $routeParams, db) {
-
-	$scope.key = $routeParams.obj;
-	$scope.schema = $routeParams.schema;
-
-	db.api.get($routeParams.schema,$routeParams.obj);
 
 
-	$scope.$watch(function(){
-		try { return db.data[$routeParams.schema][$routeParams.obj]; } catch(e) {
+.controller('clidb.FormController', ['$scope', '$routeParams', 'db', '$window',
+	function($scope, $routeParams, db, $window) {
+
+	var idx = 1;
+
+	$scope.key = $routeParams.key;
+	$scope.schemaName = $routeParams.schema;
+
+	$scope.$watch(function() {
+		try { return db.data[$routeParams.schema][$routeParams.key]; } catch(e) {
+			db.api.get($routeParams.schema, $routeParams.key);
 			return null;
 		}
-	},function(obj){
-		$scope.obj = obj ? JSON.parse(obj) : obj;
+	
+	}, function(obj){
+		try { $scope.obj = JSON.parse(obj); } catch(e) { 
+			$scope.obj = obj; 
+		}
+		
+		if ($scope.obj && $scope.schema) {
+			$scope.items = parse($scope.schema, $scope.obj, 0);
+		}
+
 	});
+
+
+	$scope.$watch(function() {
+		return tv4.getSchema($routeParams.schema);
+	}, function(schema) {
+		if (schema) $scope.schema = schema;
+
+		if ($scope.obj && $scope.schema) {
+			$scope.items = parse($scope.schema, $scope.obj, 0);
+		}
+
+	});
+
+	$scope.save = function() {
+		db.api.set($scope.schemaName, $scope.key, $scope.obj, $routeParams.qid);
+		$window.history.back();
+	}
+
+	function parse(node, data, depth, path) {
+		
+		var result = [], type, items, item;
+
+		if (node.properties) {
+
+			for (var p in node.properties) {
+
+				type = node.properties[p].type;
+				
+				if (type == 'string' ||
+					type == 'number') {
+
+					item = {
+						title: p,
+						type: type,
+						value: data[p],
+						depth: depth,
+						id: idx++
+					};
+
+					result.push(item);
+				}
+
+				else if (type == 'array') {
+
+					items = node.properties[p].items;
+
+					if (!items) {
+						items = {type: 'string'};
+					}
+
+					if (items && 
+						items.type == 'object') {
+
+						for (var v in data) {
+							var next = parse(items, data[v], depth + 1);
+							result = result.concat(next);
+						}
+					}
+
+					else for (var v in data[p]) {
+
+						item = {
+							title: p,
+							index: Number(v), 
+							type: items.type,
+							value: data[v], 
+							depth: depth + 1,
+							id: idx++
+						};
+
+						result.push(item);
+					}
+				}
+
+				else {
+
+					console.log('To complete');
+				}
+			}
+		}
+
+		return result;
+	}
 
 }])
 

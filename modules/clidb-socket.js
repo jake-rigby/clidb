@@ -42,7 +42,6 @@ module.exports.connect = function(namespace, redis, socket) {
 	
 	socket.on('clidb.deleteitem',function(classkey, itemkey, qid) {
 		cli.deleteitem(classkey, itemkey, function(err, value) {
-			console.log(err, value);
 			socket.emit('clidb.deleteitem', err, Boolean(value), qid);
 			//socket.emit('clidb.class', err, {classkey:classkey, value:value}, qid); // <-- this updates the cached class (clidb.class is a TODO)
 			if (err) console.log(err);	
