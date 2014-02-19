@@ -2,7 +2,7 @@
 
 angular.module('clidb.services-controllers',[])
 
-.factory('db', ['$rootScope', 'socket.io', '$http', function($rootScope, socketio, $http) {
+.factory('db', ['$rootScope', 'socket.io', '$http', '$location', function($rootScope, socketio, $http, $location) {
 	
 	// cache
 	var service = { data: {} };
@@ -61,8 +61,8 @@ angular.module('clidb.services-controllers',[])
 			linkExpression(tv4.error ? tv4.error : schema ? null : 'unknown schema id', schema, qid);
 		},
 
-		edit : function(classkey, itemkey) {
-			// TODO - launch a json schema generated form
+		edit : function(classkey, itemkey, qid) {
+			$location.path('/form').search({obj:itemkey, schema:classkey, qid:qid});
 		},
 
 		help : function() {
@@ -255,7 +255,7 @@ angular.module('clidb.services-controllers',[])
 
 
 	/**
-	 * helpers        
+	 * parse an array of json objects and return an array of objects        
 	 */
 	function parseJSONArray(source){
 		var result = {};
@@ -379,20 +379,27 @@ angular.module('clidb.services-controllers',[])
 	}
 }])
 */
-.controller('clidb.FormController', ['$scope', '$routeParams', function($scope, $routParams) {
+.controller('clidb.FormController', ['$scope', '$routeParams', 'db', function($scope, $routeParams, db) {
+
+	$scope.key = $routeParams.obj;
+	$scope.schema = $routeParams.schema;
+
+	db.api.get($routeParams.schema,$routeParams.obj);
+
 
 	$scope.$watch(function(){
-		return form.obj;
-	},function(commands){
-		$scope.commands = commands;
-		list = [];
-		for (var key in commands) list.push(key);
-		list.sort();
+		try { return db.data[$routeParams.schema][$routeParams.obj]; } catch(e) {
+			return null;
+		}
+	},function(obj){
+		$scope.obj = obj ? JSON.parse(obj) : obj;
 	});
 
 }])
 
-
+/**
+ * pretty print directive, place filtered results in <pre> tag
+ */
 .filter('pp', function() {
 	return function(data) {
 		return angular.toJson(data, true);

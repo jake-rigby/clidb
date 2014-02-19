@@ -1,4 +1,3 @@
-var app = angular.module('DealerBlackMarketIndex',['services.public'])
 'use strict';
 	
 angular.module('public.controllers',[])
