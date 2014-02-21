@@ -22,7 +22,6 @@ angular.module('clidb.services-controllers',[])
 	service.api = {
 
 		getc : function(classkey, itemkey, qid) {
-			console.log(service.data);
 			var err, value;
 			try { value = service.data[classkey][itemkey] } catch (e) {
 				//if (!cached) service.api.get(classkey, itemkey); // <-- get and getc sould be combined for release, but we want to test the cache for now
@@ -40,7 +39,6 @@ angular.module('clidb.services-controllers',[])
 		},
 
 		set : function(classkey, itemkey, value, qid) {
-			console.log(arguments);
 			socketio.emit('clidb.setitem', classkey, itemkey, value, qid);
 		},
 
@@ -62,7 +60,8 @@ angular.module('clidb.services-controllers',[])
 
 		schema : function(schemaName, qid) {
 			var schema = tv4.getSchema(schemaName);
-			linkExpression(tv4.error ? tv4.error : schema ? null : 'unknown schema id', schema, qid);
+			if (!schema) socketio.emit('clidb.getschema', schemaName, qid);
+			else linkExpression(tv4.error ? tv4.error : schema ? null : 'unknown schema id', schema, qid);
 		},
 
 		edit : function(classkey, itemkey, qid) {
@@ -70,7 +69,6 @@ angular.module('clidb.services-controllers',[])
 		},
 
 		help : function() {
-			console.log();
 			var result = [];
 			for (var api in tv4.getSchema('api').definitions) result.push(api);
 			linkExpression(tv4.error, result, arguments[arguments.length-1]);
@@ -122,7 +120,7 @@ angular.module('clidb.services-controllers',[])
 		},
 
 		schema : function(err, result, id) {
-			service.commands[id].reply = angular.fromJson(result);
+			service.commands[id].reply = result;//angular.fromJson(result);
 			service.commands[id].err = err;
 		},
 
@@ -144,18 +142,17 @@ angular.module('clidb.services-controllers',[])
 	 */
 
 	$rootScope.$on('socket.io.connected',function(){
-		socketio.emit('clidb.getschema');
+		//socketio.emit('clidb.getschema');
 		socketio.emit('clidb.getall');
 	});
 
 
 	socketio.on('clidb.schema',function(err, id, schema, qid){
-		schema = JSON.parse(schema);
 		tv4.addSchema(id, schema);
 		for (var def in schema.definitions) {
 			tv4.addSchema(def,schema.definitions[def]);
 		}
-		if (qid) linkExpression(err, value, qid);
+		if (qid) linkExpression(err, schema, qid);
 	});
 	
 
@@ -210,7 +207,19 @@ angular.module('clidb.services-controllers',[])
 
 	var callbacks = {};
 
+	// hack to make sure api schema is asyncronously loaded before external eval
+	var inited = false;
+
 	service.eval = function(x, cb) {
+		if (inited) eval(x, cb)
+		else $http.get('schemas/api.json').then(function(result){
+			tv4.addSchema('api',result.data);
+			eval(x, cb);
+			inited = true;
+		});
+	}
+
+	function eval(x, cb) {
 
 		// http://stackoverflow.com/questions/10530532/regexp-to-split-by-white-space-with-grouping-quotes
 		var words = [];
@@ -227,10 +236,10 @@ angular.module('clidb.services-controllers',[])
 
 		// index the callback 
 		service.commands[id] = {cmd: x, idx: id};
-		callbacks[id] = service.callbacks[cmd];
+		callbacks[id] = cb ? cb : service.callbacks[cmd];
 
 		if (op && schm && tv4.validate(words, schm)) { // <-- won't validate zero alength arrays
-		
+			
 			words.push(id);
 			op.apply(service.eval, words);
 		
@@ -309,12 +318,16 @@ angular.module('clidb.services-controllers',[])
 			}
 			return r
 		} 
-		else return 'example <'+s.type+'>';	
+		else return ' ';	
 	}
+
+	// expose the create method
+	service.create = create;
 
 	// load local api schema to validate command strings
 	$http.get('schemas/api.json').then(function(result){
 		tv4.addSchema('api',result.data);
+		inited = true;
 	});
 
 
@@ -372,38 +385,35 @@ angular.module('clidb.services-controllers',[])
 .controller('clidb.FormController', ['$scope', '$routeParams', 'db', '$window',
 	function($scope, $routeParams, db, $window) {
 
-	var idx = 1;
+	//https://coderwall.com/p/ngisma
+	$scope.safeApply = function(fn) {
+		var phase = this.$root.$$phase;
+		if(phase == '$apply' || phase == '$digest') {
+			if(fn && (typeof(fn) === 'function')) {
+			fn();
+			}
+		} else {
+			this.$apply(fn);
+		}
+	};
+
+	var idx = 0;
 
 	$scope.key = $routeParams.key;
 	$scope.schemaName = $routeParams.schema;
 
-	$scope.$watch(function() {
-		try { return db.data[$routeParams.schema][$routeParams.key]; } catch(e) {
-			db.api.get($routeParams.schema, $routeParams.key);
-			return null;
+
+	db.eval('get '+$scope.schemaName+' '+$scope.key, function(err, result) {
+
+		try { $scope.obj = JSON.parse(result); } catch(e) { 
+			$scope.obj = result; 
 		}
-	
-	}, function(obj){
-		try { $scope.obj = JSON.parse(obj); } catch(e) { 
-			$scope.obj = obj; 
-		}
-		
-		if ($scope.obj && $scope.schema) {
-			$scope.items = parse($scope.schema, $scope.obj, 0);
-		}
-
-	});
-
-
-	$scope.$watch(function() {
-		return tv4.getSchema($routeParams.schema);
-	}, function(schema) {
-		if (schema) $scope.schema = schema;
-
-		if ($scope.obj && $scope.schema) {
-			$scope.items = parse($scope.schema, $scope.obj, 0);
-		}
-
+		db.eval('schema '+$scope.schemaName, function(err, result) {
+			$scope.safeApply(function() {
+				$scope.schema = result;
+				$scope.items = parse($scope.schema, $scope.obj, 0);
+			});
+		});
 	});
 
 	$scope.save = function() {
@@ -411,17 +421,77 @@ angular.module('clidb.services-controllers',[])
 		$window.history.back();
 	}
 
+	$scope.loadRefs = function(item) {
+		db.eval('list '+item.ref, function(err, result) {
+			item.refs = [];
+			for (var key in result) item.refs.push(key);
+		})
+	}
+
+	$scope.setRef = function(item, ref) {
+		$scope.obj[item.title] = ref;
+	}
+
+	$scope.augmentList = function(path, template) {
+		var loc = $scope.obj;
+		while (path.length && loc) {
+			loc = loc[path.shift()];
+		}
+		loc.push(template);
+		$scope.items = parse($scope.schema, $scope.obj, 0);
+	}
+
+	$scope.removeListItem = function(item) {
+		var loc = $scope.obj;
+		while (item.path.length && loc) {
+			loc = loc[item.path.shift()];
+		}
+		if (loc){
+			loc[item.index] = null;
+			compressList(loc);
+		}
+		$scope.items = parse($scope.schema, $scope.obj, 0);
+	}
+
+	function compressList(source){
+		var temp = [];
+		for(var i in source) source[i] && temp.push(source[i]); 
+		angular.copy(temp,source);
+	}
+
 	function parse(node, data, depth, path) {
+
+		if (!path) path = [];
+
 		
-		var result = [], type, items, item;
+		var result = [], type, items, item, ref;
 
 		if (node.properties) {
 
 			for (var p in node.properties) {
 
 				type = node.properties[p].type;
+				ref = node.properties[p].ref;
+				items = node.properties[p].items;
+
+				// items of type reference
+				if (ref) {
+
+					item = {
+						title: p,
+						type: type,
+						value: data[p],
+						depth: depth,
+						ref: ref,
+						id: idx++
+					};
+
+					item.refs = ['loading'];
+					result.push(item);
+				}
 				
-				if (type == 'string' ||
+				// items of primitive type
+				else if (type == 'string' ||
 					type == 'number') {
 
 					item = {
@@ -435,19 +505,18 @@ angular.module('clidb.services-controllers',[])
 					result.push(item);
 				}
 
+				// list items
 				else if (type == 'array') {
-
-					items = node.properties[p].items;
 
 					if (!items) {
 						items = {type: 'string'};
 					}
 
-					if (items && 
-						items.type == 'object') {
+					if (items.type == 'object') {
 
 						for (var v in data) {
-							var next = parse(items, data[v], depth + 1);
+							path.push(p);
+							var next = parse(items, data[v], depth + 1, path);
 							result = result.concat(next);
 						}
 					}
@@ -459,12 +528,23 @@ angular.module('clidb.services-controllers',[])
 							index: Number(v), 
 							type: items.type,
 							value: data[v], 
-							depth: depth + 1,
-							id: idx++
+							depth: depth,
+							id: idx++,
+							path: path.concat(p)
 						};
 
 						result.push(item);
 					}
+
+					// a stub to add a new list item
+					result.push({
+						title: p,
+						index: ++v,
+						id: idx++,
+						template: db.create(items),
+						depth: depth,
+						path: path.concat(p)
+					})
 				}
 
 				else {
@@ -474,10 +554,13 @@ angular.module('clidb.services-controllers',[])
 			}
 		}
 
+
+
 		return result;
 	}
 
 }])
+
 
 /**
  * pretty print directive, place filtered results in <pre> tag

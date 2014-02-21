@@ -12,6 +12,7 @@
 		<link rel="stylesheet" type="text/css" href="lib/font-awesome/css/font-awesome.min.css">
 		<link rel="stylesheet" type="text/css" href="css/main.css">
 
+
 		<script type="text/javascript" src="lib/angular-1.2.0-rc.2/angular.js"></script>
 
 	</head>
@@ -26,8 +27,11 @@
 				{{user.displayName}}
 			</div>
 		</div>
-		
+
+		<!-- load these in this order for dropdown to work -->
 		<script type="text/javascript" src="lib/jq.js"></script> 
+		<script type="text/javascript" src="lib/bootstrap/js/bootstrap.js"></script>
+		
 		<script type="text/javascript" src="lib/angular-1.2.0-rc.2/angular-route.js"></script>
 		<script type="text/javascript" src="lib/socket.io.js"></script>
 		<script type="text/javascript" src="lib/tv4/tv4.js"></script>

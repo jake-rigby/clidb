@@ -8,6 +8,9 @@ module.exports.connect = function(namespace, redis, socket) {
 	return {
 		
 		getschema : function(id, cb) {
+			var s = tv4.getSchema('#'+id);
+			cb(s ? null : 'schema ' + id + ' not registered', id, s);
+			/*
 			if (!id) redis.hgetall(namespace+':clidb:schema',function(err, schemas) {
 				for (var key in schemas) {
 					cb(err, key, schemas[key]);
@@ -16,6 +19,7 @@ module.exports.connect = function(namespace, redis, socket) {
 			else redis.hget(namespace+':clidb:schema', id, function(err, schema) {
 				cb(err, id, schema);
 			});
+			*/
 		},
 
 		getall : function(cb) {

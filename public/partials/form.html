@@ -7,28 +7,57 @@
 	</div>
 
 
+
 	<div class="form-horizontal" role="form">
 
 		<ul>
 			<li ng-repeat="item in items">
 				
-				<!-- array (showuldn't happen as we flattened it) -->
-				<div ng-show="item.type == 'array'" class="form-group">
-					<label class="control-label" ng-click="delete(item)">&times;</label>
+				<!-- referenced fields -->
+				<div ng-show="item.ref" class="form-group">
+					<label for="item.id" class="col-sm-3 control-label">
+						<span>{{item.title}}</span>
+						<span class="text-muted"> {{item.index}}</span>
+					</label>
+					<div class="dropdown col-sm-8">
+						<button class="dropdown-toggle form-control text-left" data-toggle="dropdown" ng-click="loadRefs(item)"><span class="caret"></span>  {{obj[item.title]}}</button>
+						<ul class="dropdown-menu col-sm-9" role="menu">
+							<li ng-repeat="(key,ref) in item.refs">
+								<a ng-click="setRef(item,ref)">{{ref}}</a>
+							</li>
+						</ul>
+					</div>
 				</div>
 				
-				<!-- string -->
+				<!-- string 
 				<div ng-show="item.type == 'string' || item.type=='number'" class="form-group">
+				-->
+				<div ng-show="!item.ref &amp;&amp; !item.template" class="form-group">
 
-					<label for="item.id" class="col-sm-3 control-label">{{item.title}}</label>
-					<div class="col-sm-9">
-						<input type="{{item.type}}" id="item.id" class="form-control" ng-model="obj[item.title]" ng-show="!item.index &amp;&amp; item.index != 0" >
-						<input type="text" id="item.id" class="form-control" ng-model="obj[item.title][item.index]" ng-show="item.index || item.index == 0" >
+					<label for="item.id" class="col-sm-3 control-label">
+						<span>{{item.title}}</span>
+						<span class="text-muted"> {{item.index}}</span>
+					</label>
+					<div class="col-sm-8" ng-show="!item.index &amp;&amp; item.index != 0">
+						<input type="{{item.type}}" id="item.id" class="form-control" ng-model="obj[item.title]" >
+					</div>
+					<div class="col-sm-8" ng-show="item.index || item.index == 0">
+						<input type="text" id="item.id" class="form-control" ng-model="obj[item.title][item.index]" >
+					</div>
+					<div class="col-sm-1" ng-show="item.index || item.index == 0">
+						<div><a class="" ng-click="removeListItem(item)"><icon class="icon-minus"></icon></a></div>
 					</div>
 				</div>
 
+				<!-- stub for new list item -->
+				<div ng-show="item.template" class="form-group">
+					<div class="col-sm-1 col-sm-offset-3">
+						<div><a ng-click="augmentList(item.path, item.template)"><icon class="icon-plus"></icon></a></div>
+					</div>					
+				</div>
+
 				
-				<!-- object (showuldn't happen as we flattened it) 
+				<!-- object 
 				<div ng-show="item.type == 'object'" class="form-group">
 
 				</div>
@@ -37,7 +66,7 @@
 			</li>
 			<li>
 				<div class=" form-group">
-					<div class="col-sm-offset-3 col-sm-9 text-right">
+					<div class="col-sm-offset-3 col-sm-8 text-right">
 						<button class="btn btn-success" ng-click="save()">save</button>
 					</div>
 				</div>
