@@ -12,12 +12,13 @@
 
 		<ul>
 			<li ng-repeat="item in items">
-				
+
 				<!-- referenced fields -->
 				<div ng-show="item.ref" class="form-group">
 					<label for="item.id" class="col-sm-3 control-label">
-						<span>{{item.title}}</span>
-						<span class="text-muted"> {{item.index}}</span>
+						<span>{{item.path}} {{item.title}}
+							<span class="text-muted"> {{item.index}} </span>
+						</span>
 					</label>
 					<div class="dropdown col-sm-8">
 						<button class="dropdown-toggle form-control text-left" data-toggle="dropdown" ng-click="loadRefs(item)"><span class="caret"></span>  {{obj[item.title]}}</button>
@@ -33,10 +34,10 @@
 				<div ng-show="item.type == 'string' || item.type=='number'" class="form-group">
 				-->
 				<div ng-show="!item.ref &amp;&amp; !item.template" class="form-group">
-
 					<label for="item.id" class="col-sm-3 control-label">
-						<span>{{item.title}}</span>
-						<span class="text-muted"> {{item.index}}</span>
+						<span>{{item.path}} {{item.title}}
+							<span class="text-muted"> {{item.index}} </span>
+						</span>
 					</label>
 					<div class="col-sm-8" ng-show="!item.index &amp;&amp; item.index != 0">
 						<input type="{{item.type}}" id="item.id" class="form-control" ng-model="obj[item.title]" >

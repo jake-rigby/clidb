@@ -211,15 +211,17 @@ angular.module('clidb.services-controllers',[])
 	var inited = false;
 
 	service.eval = function(x, cb) {
-		if (inited) eval(x, cb)
+		var qid = Date.now();
+		if (inited) eval(x, qid, cb)
 		else $http.get('schemas/api.json').then(function(result){
 			tv4.addSchema('api',result.data);
-			eval(x, cb);
+			eval(x, qid, cb);
 			inited = true;
 		});
+		return qid;
 	}
 
-	function eval(x, cb) {
+	function eval(x, id, cb) {
 
 		// http://stackoverflow.com/questions/10530532/regexp-to-split-by-white-space-with-grouping-quotes
 		var words = [];
@@ -230,12 +232,11 @@ angular.module('clidb.services-controllers',[])
 		// validate the command via its schema
 		var cmd = words[0],
 			op = service.api[cmd],
-			schm = tv4.getSchema('api#'+words[0]),
-			id = Date.now();//String(service.commands.length); // <-- change to timestamp
+			schm = tv4.getSchema('api#'+words[0]);
 		words = words.slice(1);
 
-		// index the callback 
-		service.commands[id] = {cmd: x, idx: id};
+		// index a generated callback - don't index commands with passed in callbacks
+		if (!cb) service.commands[id] = {cmd: x, idx: id};
 		callbacks[id] = cb ? cb : service.callbacks[cmd];
 
 		if (op && schm && tv4.validate(words, schm)) { // <-- won't validate zero alength arrays
@@ -342,6 +343,7 @@ angular.module('clidb.services-controllers',[])
 	var list = [];
 
 	$scope.submit = function(entry){
+		if (!entry) return;
 		var qid = db.eval(entry);
 		list.push(qid);
 		$scope.cmd = null;
@@ -459,12 +461,11 @@ angular.module('clidb.services-controllers',[])
 		angular.copy(temp,source);
 	}
 
-	function parse(node, data, depth, path) {
+	function parse(node, data, depth, path, pindex) {
 
 		if (!path) path = [];
-
 		
-		var result = [], type, items, item, ref;
+		var result = [], type, items, item, ref, ppath;
 
 		if (node.properties) {
 
@@ -483,7 +484,9 @@ angular.module('clidb.services-controllers',[])
 						value: data[p],
 						depth: depth,
 						ref: ref,
-						id: idx++
+						id: idx++,
+						path: path.concat([p]),
+						index: pindex
 					};
 
 					item.refs = ['loading'];
@@ -499,7 +502,10 @@ angular.module('clidb.services-controllers',[])
 						type: type,
 						value: data[p],
 						depth: depth,
-						id: idx++
+						id: idx++,
+						path: path.concat([p]),
+						index: pindex
+
 					};
 
 					result.push(item);
@@ -511,16 +517,15 @@ angular.module('clidb.services-controllers',[])
 					if (!items) {
 						items = {type: 'string'};
 					}
-
+					/* soooo... arrays of objects? 
 					if (items.type == 'object') {
 
-						for (var v in data) {
-							path.push(p);
-							var next = parse(items, data[v], depth + 1, path);
+						for (var v in data[p]) {
+							var next = parse(items, data[p][v], depth + 1, path+' '+p, v);
 							result = result.concat(next);
 						}
-					}
-
+					}*/
+					
 					else for (var v in data[p]) {
 
 						item = {
@@ -530,7 +535,7 @@ angular.module('clidb.services-controllers',[])
 							value: data[v], 
 							depth: depth,
 							id: idx++,
-							path: path.concat(p)
+							path: path.concat([p])
 						};
 
 						result.push(item);
@@ -543,12 +548,12 @@ angular.module('clidb.services-controllers',[])
 						id: idx++,
 						template: db.create(items),
 						depth: depth,
-						path: path.concat(p)
+						path: path.concat([p])
 					})
 				}
 
 				else {
-
+					// type is object
 					console.log('To complete');
 				}
 			}
