@@ -65,7 +65,12 @@ angular.module('clidb.services-controllers',[])
 		},
 
 		edit : function(classkey, itemkey, qid) {
-			$location.path('/form').search({key:itemkey, schema:classkey, qid:qid});
+			var schema = tv4.getSchema(classkey);
+			if (!schema) {
+				socketio.emit('clidb.getschema', classkey, qid);
+				linkExpression(tv4.error ? tv4.error : schema ? null : 'trying to fetch schema, try again', schema, qid);
+			}
+			else $location.path('/form').search({key:itemkey, schema:JSON.stringify(schema), schemaName:classkey, qid:qid});
 		},
 
 		help : function() {
@@ -384,42 +389,151 @@ angular.module('clidb.services-controllers',[])
 }])
 
 
-.controller('clidb.FormController', ['$scope', '$routeParams', 'db', '$window',
-	function($scope, $routeParams, db, $window) {
-
-	//https://coderwall.com/p/ngisma
-	$scope.safeApply = function(fn) {
-		var phase = this.$root.$$phase;
-		if(phase == '$apply' || phase == '$digest') {
-			if(fn && (typeof(fn) === 'function')) {
-			fn();
-			}
-		} else {
-			this.$apply(fn);
-		}
-	};
+.controller('clidb.FormController', ['$scope', '$routeParams', 'db', '$window','$location',
+	function($scope, $routeParams, db, $window, $location) {
 
 	var idx = 0;
 
 	$scope.key = $routeParams.key;
-	$scope.schemaName = $routeParams.schema;
+	$scope.schemaName = $routeParams.schemaName;
+	$scope.schema = JSON.parse($routeParams.schema);
+	$scope.path = $routeParams.path;
 
 
 	db.eval('get '+$scope.schemaName+' '+$scope.key, function(err, result) {
 
-		try { $scope.obj = JSON.parse(result); } catch(e) { 
-			$scope.obj = result; 
+		try { $scope.root = JSON.parse(result); } catch(e) { 
+			$scope.root = result;
 		}
-		db.eval('schema '+$scope.schemaName, function(err, result) {
-			$scope.safeApply(function() {
-				$scope.schema = result;
-				$scope.items = parse($scope.schema, $scope.obj, 0);
-			});
-		});
+		if ($scope.path) {
+			var p = angular.copy($scope.path),
+				o = $scope.root;
+			while(p.length && o) o = o[p.shift()];
+			if (o) $scope.obj = o;
+			else throw new error('invalid $scope.path');
+		}
+
+		else $scope.obj = $scope.root;
+
+		$scope.items = parse($scope.schema, $scope.obj, 0);
 	});
 
+	function parse(node, data, depth, path, pindex) {
+
+		if (!path) path = [];
+		
+		var result = [], type, items, item, ref, ppath;
+
+		if (node.properties) {
+
+			for (var p in node.properties) {
+
+				type = node.properties[p].type;
+				ref = node.properties[p].ref;
+				items = node.properties[p].items;
+
+				// items of type reference
+				if (ref) {
+
+					item = {
+						title: p,
+						type: item.type,
+						value: data[p],
+						depth: depth,
+						ref: ref,
+						id: idx++,
+						path: path.concat([p]),
+						index: pindex
+					};
+
+					item.refs = ['loading'];
+					result.push(item);
+				}
+				
+				// items of primitive type
+				else if (type == 'string' ||
+					type == 'number') {
+
+					item = {
+						title: p,
+						type: 'number',
+						value: data[p],
+						depth: depth,
+						id: idx++,
+						path: path.concat([p]),
+						index: pindex
+
+					};
+
+					result.push(item);
+				}
+
+				// list items
+				else if (type == 'array') {
+
+					if (!items) {
+						items = {type: 'string'};
+					}
+
+					// for objects we launch a new form, but we have to call back to this one
+					if (items.type == 'object') {
+
+						for (var v in data[p]) {
+
+							item = {
+								title: p,
+								index: Number(v),
+								type: 'object',
+								value: data[v],
+								depth: depth,
+								id: idx++,
+								schema: node.properties[p].items,
+								path: path.concat([p,v])
+							}
+
+							result.push(item);
+						}
+					}
+					
+					else for (var v in data[p]) {
+
+						item = {
+							title: p,
+							index: Number(v), 
+							type: items.type,
+							value: data[v], 
+							depth: depth,
+							id: idx++,
+							path: path.concat([p])
+						};
+
+						result.push(item);
+					}
+
+					// a stub to add a new list item
+					result.push({
+						title: p,
+						index: ++v,
+						id: idx++,
+						template: db.create(items),
+						depth: depth,
+						path: path.concat([p])
+					})
+				}
+
+				else {
+					// type is object
+					console.log('To complete');
+				}
+			}
+		}
+
+		return result;
+	}
+
+
 	$scope.save = function() {
-		db.api.set($scope.schemaName, $scope.key, $scope.obj, $routeParams.qid);
+		db.api.set($scope.schemaName, $scope.key, $scope.root, $routeParams.qid);
 		$window.history.back();
 	}
 
@@ -455,114 +569,28 @@ angular.module('clidb.services-controllers',[])
 		$scope.items = parse($scope.schema, $scope.obj, 0);
 	}
 
+	$scope.editChild = function(schema, path) {
+		$location.path('/form').search({key: $scope.key, schema: JSON.stringify(schema), schemaName: $scope.schemaName, path: path});
+	}
+
 	function compressList(source){
 		var temp = [];
 		for(var i in source) source[i] && temp.push(source[i]); 
 		angular.copy(temp,source);
 	}
 
-	function parse(node, data, depth, path, pindex) {
-
-		if (!path) path = [];
-		
-		var result = [], type, items, item, ref, ppath;
-
-		if (node.properties) {
-
-			for (var p in node.properties) {
-
-				type = node.properties[p].type;
-				ref = node.properties[p].ref;
-				items = node.properties[p].items;
-
-				// items of type reference
-				if (ref) {
-
-					item = {
-						title: p,
-						type: type,
-						value: data[p],
-						depth: depth,
-						ref: ref,
-						id: idx++,
-						path: path.concat([p]),
-						index: pindex
-					};
-
-					item.refs = ['loading'];
-					result.push(item);
-				}
-				
-				// items of primitive type
-				else if (type == 'string' ||
-					type == 'number') {
-
-					item = {
-						title: p,
-						type: type,
-						value: data[p],
-						depth: depth,
-						id: idx++,
-						path: path.concat([p]),
-						index: pindex
-
-					};
-
-					result.push(item);
-				}
-
-				// list items
-				else if (type == 'array') {
-
-					if (!items) {
-						items = {type: 'string'};
-					}
-					/* soooo... arrays of objects? 
-					if (items.type == 'object') {
-
-						for (var v in data[p]) {
-							var next = parse(items, data[p][v], depth + 1, path+' '+p, v);
-							result = result.concat(next);
-						}
-					}*/
-					
-					else for (var v in data[p]) {
-
-						item = {
-							title: p,
-							index: Number(v), 
-							type: items.type,
-							value: data[v], 
-							depth: depth,
-							id: idx++,
-							path: path.concat([p])
-						};
-
-						result.push(item);
-					}
-
-					// a stub to add a new list item
-					result.push({
-						title: p,
-						index: ++v,
-						id: idx++,
-						template: db.create(items),
-						depth: depth,
-						path: path.concat([p])
-					})
-				}
-
-				else {
-					// type is object
-					console.log('To complete');
-				}
+	//https://coderwall.com/p/ngisma
+	$scope.safeApply = function(fn) {
+		var phase = this.$root.$$phase;
+		if(phase == '$apply' || phase == '$digest') {
+			if(fn && (typeof(fn) === 'function')) {
+			fn();
 			}
+		} else {
+			this.$apply(fn);
 		}
+	};
 
-
-
-		return result;
-	}
 
 }])
 

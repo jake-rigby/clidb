@@ -16,7 +16,7 @@
 				<!-- referenced fields -->
 				<div ng-show="item.ref" class="form-group">
 					<label for="item.id" class="col-sm-3 control-label">
-						<span>{{item.path}} {{item.title}}
+						<span>{{item.title}}
 							<span class="text-muted"> {{item.index}} </span>
 						</span>
 					</label>
@@ -34,20 +34,38 @@
 				<div ng-show="item.type == 'string' || item.type=='number'" class="form-group">
 				-->
 				<div ng-show="!item.ref &amp;&amp; !item.template" class="form-group">
+					
+					<!-- field label -->
 					<label for="item.id" class="col-sm-3 control-label">
-						<span>{{item.path}} {{item.title}}
+						<span>{{item.type}} | {{item.title}}
 							<span class="text-muted"> {{item.index}} </span>
 						</span>
 					</label>
-					<div class="col-sm-8" ng-show="!item.index &amp;&amp; item.index != 0">
+					
+					<!-- string editor -->
+					<div class="col-sm-8" ng-show="!item.index &amp;&amp; item.type=='string'">
 						<input type="{{item.type}}" id="item.id" class="form-control" ng-model="obj[item.title]" >
 					</div>
-					<div class="col-sm-8" ng-show="item.index || item.index == 0">
+					
+					<!-- object editor -->
+					<div class="col-sm-8" ng-show="item.type=='object'">
+						<button class="btn btn-default form-control" ng-click="editChild(item.schema, item.path)">
+							<span>{{obj[item.title]}}</span>
+							<span><icon class="icon-share-alt"></icon></span>
+						</button>
+					</div>
+					
+					<!-- array string element editor -->
+					<div class="col-sm-8" ng-show="item.index &amp;&amp; item.type=='string'">
 						<input type="text" id="item.id" class="form-control" ng-model="obj[item.title][item.index]" >
 					</div>
+					
+					<!-- remove array element -->
 					<div class="col-sm-1" ng-show="item.index || item.index == 0">
 						<div><a class="" ng-click="removeListItem(item)"><icon class="icon-minus"></icon></a></div>
 					</div>
+
+
 				</div>
 
 				<!-- stub for new list item -->
@@ -56,6 +74,14 @@
 						<div><a ng-click="augmentList(item.path, item.template)"><icon class="icon-plus"></icon></a></div>
 					</div>					
 				</div>
+
+				<!-- stub for new list item 
+				<div ng-show="item.schema" class="form-group">
+					<div class="col-sm-1 col-sm-offset-3">
+						<div><a ng-click="editChild(item.schema, item.path)"><icon class="icon-asterisk"></icon></a></div>
+					</div>					
+				</div>
+				-->
 
 				
 				<!-- object 
