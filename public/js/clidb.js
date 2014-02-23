@@ -393,30 +393,56 @@ angular.module('clidb.services-controllers',[])
 	function($scope, $routeParams, db, $window, $location) {
 
 	var idx = 0;
-
+	
 	$scope.key = $routeParams.key;
 	$scope.schemaName = $routeParams.schemaName;
 	$scope.schema = JSON.parse($routeParams.schema);
 	$scope.path = $routeParams.path;
+	
+	/**
+	 * If the URL parameter 'template' is present, parse that as the root
+	 * otherwise try and load from the db with the 'key' parameter
+	 */
+	try {
 
+		$scope.root = JSON.parse($routeParams.template);
+		//console.log('template method', $scope.template);
+		init();
 
-	db.eval('get '+$scope.schemaName+' '+$scope.key, function(err, result) {
+	} catch (e) {
 
-		try { $scope.root = JSON.parse(result); } catch(e) { 
-			$scope.root = result;
-		}
+		db.eval('get '+$scope.schemaName+' '+$scope.key, function(err, result) { // <-- we use 'eval' so we can pass out own callback - this is a failing of the clidb module
+			
+			$scope.root = JSON.parse(result); 
+			//console.log('template method', $scope.root);
+			init();
+
+		});
+	}
+
+	/*
+	 * crawl the root object to the given 'path'
+	 * or load the root as the edit target
+	 */
+	function init() {
+
 		if ($scope.path) {
 			var p = angular.copy($scope.path),
 				o = $scope.root;
 			while(p.length && o) o = o[p.shift()];
 			if (o) $scope.obj = o;
-			else throw new error('invalid $scope.path');
+			else throw new error('invalid object path');
 		}
 
 		else $scope.obj = $scope.root;
 
+		var valid = tv4.validate($scope.obj, $scope.schema);
+		//console.log('validation results ', $scope.obj, $scope.schema, tv4.error, valid);
 		$scope.items = parse($scope.schema, $scope.obj, 0);
-	});
+
+	}
+
+
 
 	function parse(node, data, depth, path, pindex) {
 
@@ -456,7 +482,7 @@ angular.module('clidb.services-controllers',[])
 
 					item = {
 						title: p,
-						type: 'number',
+						type: type,
 						value: data[p],
 						depth: depth,
 						id: idx++,
@@ -484,11 +510,11 @@ angular.module('clidb.services-controllers',[])
 								title: p,
 								index: Number(v),
 								type: 'object',
-								value: data[v],
+								value: JSON.stringify(data[p][v], undefined, 2),
 								depth: depth,
 								id: idx++,
 								schema: node.properties[p].items,
-								path: path.concat([p,v])
+								path: path.concat([p,Number(v)])
 							}
 
 							result.push(item);
@@ -496,15 +522,15 @@ angular.module('clidb.services-controllers',[])
 					}
 					
 					else for (var v in data[p]) {
-
+			
 						item = {
 							title: p,
 							index: Number(v), 
 							type: items.type,
-							value: data[v], 
+							value: data[p][v], 
 							depth: depth,
 							id: idx++,
-							path: path.concat([p])
+							path: path.concat([p,Number(v)])
 						};
 
 						result.push(item);
@@ -531,6 +557,16 @@ angular.module('clidb.services-controllers',[])
 		return result;
 	}
 
+
+	$scope.editChild = function(schema, path) {
+		db.api.set($scope.schemaName, $scope.key, $scope.root, $routeParams.qid);
+		$location.path('/form').search({
+			key: $scope.key, 
+			schema: JSON.stringify(schema), 
+			schemaName: $scope.schemaName, 
+			path: path,
+			template: $scope.root } );
+	}
 
 	$scope.save = function() {
 		db.api.set($scope.schemaName, $scope.key, $scope.root, $routeParams.qid);
@@ -559,18 +595,14 @@ angular.module('clidb.services-controllers',[])
 
 	$scope.removeListItem = function(item) {
 		var loc = $scope.obj;
-		while (item.path.length && loc) {
+		while (item.path.length > 1 && loc) {
 			loc = loc[item.path.shift()];
 		}
 		if (loc){
-			loc[item.index] = null;
+			loc[item.path.shift()] = null;
 			compressList(loc);
 		}
 		$scope.items = parse($scope.schema, $scope.obj, 0);
-	}
-
-	$scope.editChild = function(schema, path) {
-		$location.path('/form').search({key: $scope.key, schema: JSON.stringify(schema), schemaName: $scope.schemaName, path: path});
 	}
 
 	function compressList(source){

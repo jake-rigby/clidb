@@ -37,32 +37,31 @@
 					
 					<!-- field label -->
 					<label for="item.id" class="col-sm-3 control-label">
-						<span>{{item.type}} | {{item.title}}
+						<span>{{item.title}}
 							<span class="text-muted"> {{item.index}} </span>
 						</span>
 					</label>
 					
 					<!-- string editor -->
-					<div class="col-sm-8" ng-show="!item.index &amp;&amp; item.type=='string'">
+					<div class="col-sm-8" ng-show="!(item.index || item.index == 0) &amp;&amp; item.type=='string'">
 						<input type="{{item.type}}" id="item.id" class="form-control" ng-model="obj[item.title]" >
 					</div>
 					
 					<!-- object editor -->
-					<div class="col-sm-8" ng-show="item.type=='object'">
-						<button class="btn btn-default form-control" ng-click="editChild(item.schema, item.path)">
-							<span>{{obj[item.title]}}</span>
-							<span><icon class="icon-share-alt"></icon></span>
-						</button>
+					<div class="col-sm-8 " ng-show="item.type=='object'">
+						<pre class="">{{item.value}}
+							<a ng-click="editChild(item.schema, item.path)"><icon class="pull-right icon-edit"></icon></a>
+						</pre>
 					</div>
 					
 					<!-- array string element editor -->
-					<div class="col-sm-8" ng-show="item.index &amp;&amp; item.type=='string'">
-						<input type="text" id="item.id" class="form-control" ng-model="obj[item.title][item.index]" >
+					<div class="col-sm-8" ng-show="(item.index || item.index == 0) &amp;&amp; item.type=='string'">
+						<input type="text" id="item.id" class="form-control" ng-model="obj[item.title][item.index]">
 					</div>
 					
 					<!-- remove array element -->
-					<div class="col-sm-1" ng-show="item.index || item.index == 0">
-						<div><a class="" ng-click="removeListItem(item)"><icon class="icon-minus"></icon></a></div>
+					<div class="col-sm-1" ng-show="(item.index || item.index == 0)">
+						<div><a ng-click="removeListItem(item)"><icon class="icon-remove"></icon></a></div>
 					</div>
 
 
@@ -70,25 +69,17 @@
 
 				<!-- stub for new list item -->
 				<div ng-show="item.template" class="form-group">
-					<div class="col-sm-1 col-sm-offset-3">
-						<div><a ng-click="augmentList(item.path, item.template)"><icon class="icon-plus"></icon></a></div>
+
+					<!-- field label -->
+					<label for="item.id+'_'" class="col-sm-3 control-label">
+						<span class="text-muted">{{item.title}} {{item.index}} </span>
+					</label>
+
+					<div class="col-sm-8">
+						<button id="item.id+'_'" class="form-control" ng-click="augmentList(item.path, item.template)"><icon class="icon-plus text-primary"></icon></button>
 					</div>					
-				</div>
-
-				<!-- stub for new list item 
-				<div ng-show="item.schema" class="form-group">
-					<div class="col-sm-1 col-sm-offset-3">
-						<div><a ng-click="editChild(item.schema, item.path)"><icon class="icon-asterisk"></icon></a></div>
-					</div>					
-				</div>
-				-->
-
-				
-				<!-- object 
-				<div ng-show="item.type == 'object'" class="form-group">
 
 				</div>
-				-->
 
 			</li>
 			<li>
