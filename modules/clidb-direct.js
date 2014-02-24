@@ -1,25 +1,30 @@
+/**
+ * @author Jake Rigby
+ *
+ * A direct api to the clidb module
+ */
 
 // deps
 var tv4 = require('tv4');
 
 // api
-module.exports.connect = function(namespace, redis, socket) {
+module.exports.connect = function(namespace, redis) {
 	
 	return {
+
+		getschemas : function(cb) {
+			var id, s;
+			var uris = tv4.getSchemaUris();
+			for (var i in uris) {
+				id = uris[i];
+				s = tv4.getSchema(id);
+				cb(s ? null : 'schema ' + id + ' not registered', id, s);
+			}
+		},
 		
 		getschema : function(id, cb) {
 			var s = tv4.getSchema('#'+id);
 			cb(s ? null : 'schema ' + id + ' not registered', id, s);
-			/*
-			if (!id) redis.hgetall(namespace+':clidb:schema',function(err, schemas) {
-				for (var key in schemas) {
-					cb(err, key, schemas[key]);
-				}
-			});
-			else redis.hget(namespace+':clidb:schema', id, function(err, schema) {
-				cb(err, id, schema);
-			});
-			*/
 		},
 
 		getall : function(cb) {
@@ -44,10 +49,11 @@ module.exports.connect = function(namespace, redis, socket) {
 		 * store @param value in the database
 		 * if the class identifies a recognised schema, validate the value by that
 		 * if the class is unknown, store the value as a primitive type (the remote client can decide)
+		 * only don't add if we have a schema and its not valid
 		 */ 
 		setitem : function(classkey, itemkey, item, cb){
 			var schema = tv4.getSchema('#'+classkey);
-			if ((schema && tv4.validate(item, schema)) || !schema) { //<-- only don't add if we have a schema and its not valid
+			if ((schema && tv4.validate(item, schema)) || !schema) {
 				redis.sismember(namespace+':clidb:classes',classkey,function(err,is){
 					if (!is) redis.sadd(namespace+':clidb:classes',classkey);
 					redis.hset(namespace+':clidb:'+classkey,itemkey,JSON.stringify(item));
@@ -73,12 +79,5 @@ module.exports.connect = function(namespace, redis, socket) {
 				// redis.hgetall(namespace+':clidb:'+classkey, cb); // <-- this updates the remote cache (clidb.class.. is a TODO)
 			});
 		}
-		/*,
-		socket.on('clidb.commit',function(){
-			api.compile(function(err,data){
-				require('fs').writeFile(dataPath+'.json',JSON.stringify(data));
-			});
-		});
-		*/
 	}	
 }

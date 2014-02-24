@@ -33,7 +33,7 @@
 				<!-- string 
 				<div ng-show="item.type == 'string' || item.type=='number'" class="form-group">
 				-->
-				<div ng-show="!item.ref &amp;&amp; !item.template" class="form-group">
+				<div ng-show="!item.ref &amp;&amp; !item.newItemStub" class="form-group">
 					
 					<!-- field label -->
 					<label for="item.id" class="col-sm-3 control-label">
@@ -43,7 +43,7 @@
 					</label>
 					
 					<!-- string editor -->
-					<div class="col-sm-8" ng-show="!(item.index || item.index == 0) &amp;&amp; item.type=='string'">
+					<div class="col-sm-8" ng-show="!(item.index || item.index == 0) &amp;&amp; item.type!='object'">
 						<input type="{{item.type}}" id="item.id" class="form-control" ng-model="obj[item.title]" >
 					</div>
 					
@@ -55,7 +55,7 @@
 					</div>
 					
 					<!-- array string element editor -->
-					<div class="col-sm-8" ng-show="(item.index || item.index == 0) &amp;&amp; item.type=='string'">
+					<div class="col-sm-8" ng-show="(item.index || item.index == 0) &amp;&amp; item.type!='object'">
 						<input type="text" id="item.id" class="form-control" ng-model="obj[item.title][item.index]">
 					</div>
 					
@@ -68,15 +68,16 @@
 				</div>
 
 				<!-- stub for new list item -->
-				<div ng-show="item.template" class="form-group">
+				<div ng-show="item.newItemStub" class="form-group">
 
-					<!-- field label -->
+					<!-- field label 
+					-->
 					<label for="item.id+'_'" class="col-sm-3 control-label">
 						<span class="text-muted">{{item.title}} {{item.index}} </span>
 					</label>
 
 					<div class="col-sm-8">
-						<button id="item.id+'_'" class="form-control" ng-click="augmentList(item.path, item.template)"><icon class="icon-plus text-primary"></icon></button>
+						<button id="item.id+'_'" class="form-control text-left" ng-click="augmentList(item.path, item.template)"><icon class="icon-plus text-primary"></icon></button>
 					</div>					
 
 				</div>

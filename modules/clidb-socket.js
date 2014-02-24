@@ -1,10 +1,19 @@
+/**
+ * @author Jake Rigby
+ *
+ * connect a remote client to the direct api via socket
+ */
 module.exports.connect = function(namespace, redis, socket) {
 
-	var cli = require('./clidb-direct').connect(namespace, redis, socket);
+	var cli = require('./clidb-direct').connect(namespace, redis, socket); // <-- for every connection ??
+
+	cli.getschemas(function(err, id, schema){
+		socket.emit('clidb.schema',err,  id, schema);
+		if (err) console.log(err); 
+	})
 
 	socket.on('clidb.getschema', function(id, qid) {
 		cli.getschema(id, function(err, id, schema){
-			console.log(err, id, schema);
 			socket.emit('clidb.schema',err,  id, schema, qid);
 			if (err) console.log(err); 
 		});

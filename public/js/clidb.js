@@ -27,7 +27,7 @@ angular.module('clidb.services-controllers',[])
 				//if (!cached) service.api.get(classkey, itemkey); // <-- get and getc sould be combined for release, but we want to test the cache for now
 				err = 'not cached';
 			}
-			linkExpression(err, value, qid); 
+			linkCallback(err, value, qid); 
 		},
 
 		get : function(classkey, itemkey, qid) {
@@ -43,15 +43,16 @@ angular.module('clidb.services-controllers',[])
 		},
 
 		new : function(classkey, itemkey, qid) {
-			var definition = tv4.getSchema(classkey),
+			var definition = tv4.getSchema(classkey);
+			if (!definition) return linkCallback('unable find schema '+classkey, null, qid); 
 				instance = create(definition);
-			if (!instance) return linkExpression('unable to create '+classkey, null, qid);
+			if (!instance) return linkCallback('unable to create '+classkey, null, qid);
 			var valid = tv4.validate(instance,definition);
 			if (valid) {
 				socketio.emit('clidb.setitem', classkey, itemkey, instance, qid);
 				service.api.edit(classkey, itemkey, qid);
 			}
-			else linkExpression(tv4.error, null, qid);
+			else linkCallback(tv4.error, null, qid);
 		},
 
 		list : function(classkey, qid) {
@@ -61,22 +62,19 @@ angular.module('clidb.services-controllers',[])
 		schema : function(schemaName, qid) {
 			var schema = tv4.getSchema(schemaName);
 			if (!schema) socketio.emit('clidb.getschema', schemaName, qid);
-			else linkExpression(tv4.error ? tv4.error : schema ? null : 'unknown schema id', schema, qid);
+			else linkCallback(tv4.error ? tv4.error : schema ? null : 'unknown schema id', schema, qid);
 		},
 
 		edit : function(classkey, itemkey, qid) {
 			var schema = tv4.getSchema(classkey);
-			if (!schema) {
-				socketio.emit('clidb.getschema', classkey, qid);
-				linkExpression(tv4.error ? tv4.error : schema ? null : 'trying to fetch schema, try again', schema, qid);
-			}
-			else $location.path('/form').search({key:itemkey, schema:JSON.stringify(schema), schemaName:classkey, qid:qid});
+			if (schema) $location.path('/form').search({key:itemkey, schema:JSON.stringify(schema), schemaName:classkey, qid:qid});
+			else linkCallback(tv4.error ? tv4.error : schema ? null : 'schema not found', schema, qid);
 		},
 
 		help : function() {
 			var result = [];
 			for (var api in tv4.getSchema('api').definitions) result.push(api);
-			linkExpression(tv4.error, result, arguments[arguments.length-1]);
+			linkCallback(tv4.error, result, arguments[arguments.length-1]);
 		}
 	}
 
@@ -153,11 +151,14 @@ angular.module('clidb.services-controllers',[])
 
 
 	socketio.on('clidb.schema',function(err, id, schema, qid){
+		if (err) {
+			return console.log(err);
+		}
 		tv4.addSchema(id, schema);
 		for (var def in schema.definitions) {
 			tv4.addSchema(def,schema.definitions[def]);
 		}
-		if (qid) linkExpression(err, schema, qid);
+		if (qid) linkCallback(err, schema, qid);
 	});
 	
 
@@ -171,9 +172,9 @@ angular.module('clidb.services-controllers',[])
 
 	socketio.on('clidb.class',function(err, classkey, value, qid){
 		$rootScope.$apply(function(){
-			if (!value || !classkey) return linkExpression('not found', null, qid);
+			if (!value || !classkey) return linkCallback('not found', null, qid);
 			service.data[classkey] = parseJSONArray(value);
-			if (qid) linkExpression(err, value, qid);
+			if (qid) linkCallback(err, value, qid);
 		});
 	});
 
@@ -182,21 +183,21 @@ angular.module('clidb.services-controllers',[])
 		$rootScope.$apply(function() {
 			if (!service.data[classkey]) service.data[classkey] = {};
 			service.data[classkey][itemkey] = value;
-			if (qid) linkExpression(err, value, qid);
+			if (qid) linkCallback(err, value, qid);
 		}, true);
 	});
 
 
 	socketio.on('clidb.setitem', function(err, data, qid){
 		$rootScope.$apply(function(){
-			if (qid) linkExpression(err, data, qid);
+			if (qid) linkCallback(err, data, qid);
 		}, true);
 	});
 
 
 	socketio.on('clidb.deleteitem', function(err, data, qid){
 		$rootScope.$apply(function(){
-			if (qid) linkExpression(err, data, qid);
+			if (qid) linkCallback(err, data, qid);
 		}, true);
 	});
 
@@ -212,7 +213,8 @@ angular.module('clidb.services-controllers',[])
 
 	var callbacks = {};
 
-	// hack to make sure api schema is asyncronously loaded before external eval
+	// hack to make sure api schema is asyncronously loaded before external eval 
+	// (NOT NEEDED AS THE FORM NOW ACCEPTS THE SCHEMA JSON)
 	var inited = false;
 
 	service.eval = function(x, cb) {
@@ -253,7 +255,7 @@ angular.module('clidb.services-controllers',[])
 		
 			var err = schm ?
 				tv4.error.message : 'unknown command : '+ cmd;
-			linkExpression(err, null, id);
+			linkCallback(err, null, id);
 		}
 
 		return id;
@@ -262,13 +264,15 @@ angular.module('clidb.services-controllers',[])
 	/**
 	 * link async results to cached commands and their callbacks
 	 */
-	function linkExpression(err, reply, id) {
-		if (callbacks[id]) {
-			callbacks[id](err, reply, id);
-			delete callbacks[id];
-		} else if (service.commands[id]) {
-			service.commands[id].err = err;
-			service.commands[id].reply = reply;
+	function linkCallback(err, reply, qid) {
+	
+		if (callbacks[qid]) {
+			callbacks[qid](err, reply, qid);
+			delete callbacks[qid];
+	
+		} else if (service.commands[qid]) {
+			service.commands[qid].err = err;
+			service.commands[qid].reply = reply;
 		}
 	}
 
@@ -286,12 +290,9 @@ angular.module('clidb.services-controllers',[])
 	 * create a minimal instance described by a schema
 	 */
  	function create(s) {
- 		if (!s) {
- 			return null
- 		} else if (s.type=='array'){
-			//return [];
-			return [create(s.items), create(s.items)];
-		} else if (s.type=='object'){
+ 		if (!s) return null
+ 		else if (s.type=='array') return [];
+		else if (s.type=='object'){
 			var r = {};
 			for (var p in s.properties){
 				
@@ -324,7 +325,7 @@ angular.module('clidb.services-controllers',[])
 			}
 			return r
 		} 
-		else return ' ';	
+		else return '';	
 	}
 
 	// expose the create method
@@ -344,8 +345,9 @@ angular.module('clidb.services-controllers',[])
 
 .controller('clidb.ConsoleController',['$scope', 'db', function($scope, db) {
 
-	var idx = 0;
-	var list = [];
+	var idx = 0,
+		list = [],
+		inited = false;
 
 	$scope.submit = function(entry){
 		if (!entry) return;
@@ -383,6 +385,11 @@ angular.module('clidb.services-controllers',[])
 		list = [];
 		for (var key in commands) list.push(key);
 		list.sort();
+		if (!inited) {
+			$scope.cmd = ''; 
+			idx = list.length;
+		}
+		inited = true;
 	});
 
 
@@ -411,7 +418,7 @@ angular.module('clidb.services-controllers',[])
 
 	} catch (e) {
 
-		db.eval('get '+$scope.schemaName+' '+$scope.key, function(err, result) { // <-- we use 'eval' so we can pass out own callback - this is a failing of the clidb module
+		db.eval('get ' + $scope.schemaName + ' "' + $scope.key + '"', function(err, result) { // <-- we use 'eval' so we can pass out own callback - this is a failing of the clidb module
 			
 			$scope.root = JSON.parse(result); 
 			//console.log('template method', $scope.root);
@@ -539,9 +546,10 @@ angular.module('clidb.services-controllers',[])
 					// a stub to add a new list item
 					result.push({
 						title: p,
-						index: ++v,
+						index: data[p].length,
 						id: idx++,
 						template: db.create(items),
+						newItemStub: true,
 						depth: depth,
 						path: path.concat([p])
 					})
