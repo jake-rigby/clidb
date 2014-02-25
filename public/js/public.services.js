@@ -8,11 +8,13 @@ angular.module('public.services',[])
 	var service = {user:null};
 	
 	$http({method: 'GET', url: servicesRoot+'/user'})
+		
 		.success(function(data, status,headers){
 			if (status == 200 && data.hasOwnProperty('identifier') && data.hasOwnProperty('displayName')) service.user = data;
 			else service.user = null; // 401
 			$rootScope.$broadcast('userUpdated',service.user);
 		})
+		
 		.error(function(data, status){
 			service.user = null;
 			$rootScope.$broadcast('userUpdated',null);
@@ -49,33 +51,4 @@ angular.module('public.services',[])
 		$rootScope.$broadcast('socket.io.connected');
 	});
 	return socket;
-}])
-
-.factory('ConsoleService',['socket.io','$rootScope',function(socketio,$rootScope){
-
-	var callbacks = {};
-
-	var service = {
-		
-		commands : [],
-		
-		eval : function(x,cb){
-			var id = service.commands.length;
-			service.commands.push({cmd:x, idx:id});
-			callbacks[id] = cb;
-			socketio.emit('evaluate',x,id);
-		}
-	};
-
-	socketio.on('evaluate.result',function(reply,err,id){
-		$rootScope.$apply(function(){
-			service.commands[id].reply = reply;
-			if (callbacks[id]) {
-				callbacks[id](err,reply);
-				callbacks[id] = null;
-			}
-		},true);
-	});
-
-	return service;
 }])

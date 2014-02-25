@@ -1,61 +1,84 @@
+
 <div class="container bg_d bd_lead_d lead_d ng-cloak">
 	
-	<div class="row">
-		<div class="col-xs-12">
-			<h3 class="text-muted">Editing {{key}} ({{schemaName}})</h3>
+	<div class="row pad">
+
+		<div class="col-sm-6">
+			<h1 class="text-bold">{{schemaName}} {{key}} </h1>
 		</div>
+		
 	</div>
 
 
-
 	<div class="form-horizontal" role="form">
+		<!--
+		<div class="col-xs-6">
+			Schema
+			<pre class="bg_d lead_d bd_bg_d">{{schema | pp}}</pre>
+		</div>
+		-->
 
-		<ul>
+		<div class="col-sm-3">
+			<div class="pad">
+				JSON
+				<pre class="bg_d lead_d bd_bg_d">{{obj | pp}}</pre>
+			</div>
+		</div>
+
+		<ul class="col-sm-9">
+				
+			<li>
+
+			</li>
+
 			<li ng-repeat="item in items">
 
 				<!-- referenced fields -->
 				<div ng-show="item.ref" class="form-group">
-					<label for="item.id" class="col-sm-3 control-label">
+					
+					<!-- field label -->
+					<label for="item.id" class="col-sm-2 control-label">
 						<span>{{item.title}}
 							<span class="text-muted"> {{item.index}} </span>
 						</span>
 					</label>
-					<div class="dropdown col-sm-8">
+					
+					<!-- object view-->					
+					<div class="dropdown col-sm-9">
 						<button class="dropdown-toggle form-control text-left" data-toggle="dropdown" ng-click="loadRefs(item)"><span class="caret"></span>  {{obj[item.title]}}</button>
-						<ul class="dropdown-menu col-sm-9" role="menu">
+						<ul class="dropdown-menu" role="menu">
 							<li ng-repeat="(key,ref) in item.refs">
 								<a ng-click="setRef(item,ref)">{{ref}}</a>
 							</li>
 						</ul>
 					</div>
+
 				</div>
 				
-				<!-- string 
-				<div ng-show="item.type == 'string' || item.type=='number'" class="form-group">
-				-->
+				<!-- string -->
 				<div ng-show="!item.ref &amp;&amp; !item.newItemStub" class="form-group">
 					
 					<!-- field label -->
-					<label for="item.id" class="col-sm-3 control-label">
+					<label for="item.id" class="col-sm-2 control-label">
 						<span>{{item.title}}
 							<span class="text-muted"> {{item.index}} </span>
 						</span>
 					</label>
 					
 					<!-- string editor -->
-					<div class="col-sm-8" ng-show="!(item.index || item.index == 0) &amp;&amp; item.type!='object'">
+					<div class="col-sm-9" ng-show="!(item.index || item.index == 0) &amp;&amp; item.type!='object'">
 						<input type="{{item.type}}" id="item.id" class="form-control" ng-model="obj[item.title]" >
 					</div>
 					
 					<!-- object editor -->
-					<div class="col-sm-8 " ng-show="item.type=='object'">
+					<div class="col-sm-9 " ng-show="item.type=='object'">
 						<pre class="">{{item.value}}
 							<a ng-click="editChild(item.schema, item.path)"><icon class="pull-right icon-edit"></icon></a>
 						</pre>
 					</div>
 					
 					<!-- array string element editor -->
-					<div class="col-sm-8" ng-show="(item.index || item.index == 0) &amp;&amp; item.type!='object'">
+					<div class="col-sm-9" ng-show="(item.index || item.index == 0) &amp;&amp; item.type!='object'">
 						<input type="text" id="item.id" class="form-control" ng-model="obj[item.title][item.index]">
 					</div>
 					
@@ -70,41 +93,35 @@
 				<!-- stub for new list item -->
 				<div ng-show="item.newItemStub" class="form-group">
 
-					<!-- field label 
-					-->
-					<label for="item.id+'_'" class="col-sm-3 control-label">
+					<!-- field label -->
+					<label for="item.id+'_'" class="col-sm-2 control-label">
 						<span class="text-muted">{{item.title}} {{item.index}} </span>
 					</label>
 
-					<div class="col-sm-8">
+					<div class="col-sm-9">
 						<button id="item.id+'_'" class="form-control text-left" ng-click="augmentList(item.path, item.template)"><icon class="icon-plus text-primary"></icon></button>
 					</div>					
 
 				</div>
 
 			</li>
-			<li>
-				<div class=" form-group">
-					<div class="col-sm-offset-3 col-sm-8 text-right">
-						<button class="btn btn-success" ng-click="save()">save</button>
-					</div>
-				</div>
-			</li>
+
 		</ul>
 
 
 	</div>
 
+	<div class="row">
 
-	<div class="row pad">
-		<div class="col-xs-6">
-			Schema
-			<pre class="bg_d lead_d">{{schema | pp}}</pre>
+		<div class="col-sm-12">
+			<div class="text-right">
+				<div class="col-sm-offset-3 col-sm-8 text-right">
+					<button class="btn btn-success btn-lg" ng-click="save()">save</button>
+					<button class="btn btn-default btn-lg" ng-click="cancel()">cancel</button>
+				</div>
+			</div>
 		</div>
-		<div class="col-xs-6">
-			Data
-			<pre class="bg_d lead_d">{{obj | pp}}</pre>
-		</div>
+
 	</div>
 
 </div>

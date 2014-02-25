@@ -19,3 +19,14 @@ angular.module('public.filters',[])
 	}
 })
 
+
+
+/**
+ * pretty print directive, place filtered results in <pre> tag
+ */
+.filter('pp', function() {
+	return function(data) {
+		return angular.toJson(data, true);
+	}
+})
+

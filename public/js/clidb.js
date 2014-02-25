@@ -396,7 +396,7 @@ angular.module('clidb.services-controllers',[])
 }])
 
 
-.controller('clidb.FormController', ['$scope', '$routeParams', 'db', '$window','$location',
+.controller('clidb.FormController', ['$scope', '$routeParams', 'db', '$window', '$location',
 	function($scope, $routeParams, db, $window, $location) {
 
 	var idx = 0;
@@ -580,6 +580,11 @@ angular.module('clidb.services-controllers',[])
 		db.api.set($scope.schemaName, $scope.key, $scope.root, $routeParams.qid);
 		$window.history.back();
 	}
+	
+	$scope.cancel = function() {
+		db.api.dlt($scope.schemaName, $scope.key, $routeParams.qid);
+		$window.history.back();
+	}
 
 	$scope.loadRefs = function(item) {
 		db.eval('list '+item.ref, function(err, result) {
@@ -633,14 +638,3 @@ angular.module('clidb.services-controllers',[])
 
 
 }])
-
-
-/**
- * pretty print directive, place filtered results in <pre> tag
- */
-.filter('pp', function() {
-	return function(data) {
-		return angular.toJson(data, true);
-	}
-})
-
