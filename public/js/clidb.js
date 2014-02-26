@@ -45,7 +45,7 @@ angular.module('clidb.services-controllers',[])
 		new : function(classkey, itemkey, qid) {
 			var definition = tv4.getSchema(classkey);
 			if (!definition) return linkCallback('unable find schema '+classkey, null, qid); 
-				instance = create(definition);
+			var instance = create(definition);
 			if (!instance) return linkCallback('unable to create '+classkey, null, qid);
 			var valid = tv4.validate(instance,definition);
 			if (valid) {
@@ -218,14 +218,33 @@ angular.module('clidb.services-controllers',[])
 	var inited = false;
 
 	service.eval = function(x, cb) {
+
+		// http://stackoverflow.com/questions/10530532/regexp-to-split-by-white-space-with-grouping-quotes
+		var args = [];
+		x.replace(/"([^"]*)"|'([^']*)'|(\S+)/g, function(g0,g1,g2,g3){
+			args.push(g1 || g2 || g3 || '');
+		});
+		args.push(cb);
+		return service.do.apply(args);
+	}
+
+	service.do = function() {
+		var cb = arguments.pop(),
+			cmd = arguments.shift(),
+			op = service.api[cmd];
+
 		var qid = Date.now();
-		if (inited) eval(x, qid, cb)
+
+		if (inited) eval(x, qid, cb);
+
 		else $http.get('schemas/api.json').then(function(result){
 			tv4.addSchema('api',result.data);
 			eval(x, qid, cb);
 			inited = true;
 		});
+
 		return qid;
+
 	}
 
 	function eval(x, id, cb) {
