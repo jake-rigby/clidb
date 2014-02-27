@@ -217,6 +217,10 @@ angular.module('clidb.services-controllers',[])
 	// not really required, the form service accepts json value schema so async not important
 	var inited = false;
 
+	/*
+	 * parse a ' ' seperated string expression into an command name
+	 * and arguments
+	 */
 	service.eval = function(x, cb) {
 
 		// http://stackoverflow.com/questions/10530532/regexp-to-split-by-white-space-with-grouping-quotes
@@ -224,7 +228,7 @@ angular.module('clidb.services-controllers',[])
 		x.replace(/"([^"]*)"|'([^']*)'|(\S+)/g, function(g0,g1,g2,g3){
 			args.push(g1 || g2 || g3 || '');
 		});
-		args.push(cb);
+		if (cb) args.push(cb);
 		return service.do.apply(this, args);
 	}
 
@@ -305,6 +309,7 @@ angular.module('clidb.services-controllers',[])
 	 */
  	function create(s) {
  		if (!s) return null
+ 		else if (s.type=='array') return [create(s.items)];
  		else if (s.type=='array') return [];
 		else if (s.type=='object'){
 			var r = {};

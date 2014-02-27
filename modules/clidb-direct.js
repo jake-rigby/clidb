@@ -60,7 +60,8 @@ module.exports.connect = function(namespace, redis) {
 					cb(err, item);
 				});
 			} else {
-				cb(item+' does not validate '+schema.id, false);
+				cb(tv4.error ? tv4.error : 'schema '+classkey+' not found', false);
+				console.log(item, schema);
 			}
 		},
 
