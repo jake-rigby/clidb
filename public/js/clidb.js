@@ -214,7 +214,7 @@ angular.module('clidb.services-controllers',[])
 	var callbacks = {};
 
 	// hack to make sure api schema is asyncronously loaded before external eval 
-	// (NOT NEEDED AS THE FORM NOW ACCEPTS THE SCHEMA JSON)
+	// not really required, the form service accepts json value schema so async not important
 	var inited = false;
 
 	service.eval = function(x, cb) {
@@ -225,21 +225,29 @@ angular.module('clidb.services-controllers',[])
 			args.push(g1 || g2 || g3 || '');
 		});
 		args.push(cb);
-		return service.do.apply(args);
+		return service.do.apply(this, args);
 	}
 
 	service.do = function() {
-		var cb = arguments.pop(),
-			cmd = arguments.shift(),
-			op = service.api[cmd];
+		var cb = Object.prototype.toString.call(arguments[arguments.length - 1]) == '[object Function]' ? 
+				Array.prototype.pop.call(arguments) : 
+				null,
+			cmd = Array.prototype.shift.call(arguments),
+			args = [].slice.call(arguments),
+			qid = Date.now();
 
-		var qid = Date.now();
+		var str = [cmd].concat(args.slice(0, args.length)).join(' ');
+		
+		// index a generated callback - don't index commands with passed in callbacks
 
-		if (inited) eval(x, qid, cb);
+		if (!cb) service.commands[qid] = {cmd: str, idx: qid};
+		callbacks[qid] = cb ? cb : service.callbacks[cmd];
+
+		if (inited) p(cmd, args, qid, cb);
 
 		else $http.get('schemas/api.json').then(function(result){
 			tv4.addSchema('api',result.data);
-			eval(x, qid, cb);
+			p(cmd, args, qid, cb);
 			inited = true;
 		});
 
@@ -247,28 +255,15 @@ angular.module('clidb.services-controllers',[])
 
 	}
 
-	function eval(x, id, cb) {
+	function p(cmd, args, id, cb) {
 
-		// http://stackoverflow.com/questions/10530532/regexp-to-split-by-white-space-with-grouping-quotes
-		var words = [];
-		x.replace(/"([^"]*)"|'([^']*)'|(\S+)/g, function(g0,g1,g2,g3){
-			words.push(g1 || g2 || g3 || '');
-		});
+		var op = service.api[cmd],
+			schm = tv4.getSchema('api#'+cmd);
 
-		// validate the command via its schema
-		var cmd = words[0],
-			op = service.api[cmd],
-			schm = tv4.getSchema('api#'+words[0]);
-		words = words.slice(1);
-
-		// index a generated callback - don't index commands with passed in callbacks
-		if (!cb) service.commands[id] = {cmd: x, idx: id};
-		callbacks[id] = cb ? cb : service.callbacks[cmd];
-
-		if (op && schm && tv4.validate(words, schm)) { // <-- won't validate zero alength arrays
+		if (op && schm && tv4.validate(args, schm)) { // <-- won't validate zero alength arrays
 			
-			words.push(id);
-			op.apply(service.eval, words);
+			args.push(id);
+			op.apply(p, args);
 		
 		} else {
 		
@@ -425,7 +420,7 @@ angular.module('clidb.services-controllers',[])
 	$scope.schema = JSON.parse($routeParams.schema);
 	$scope.path = $routeParams.path;
 	
-	/**
+	/*
 	 * If the URL parameter 'template' is present, parse that as the root
 	 * otherwise try and load from the db with the 'key' parameter
 	 */
