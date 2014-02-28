@@ -32,7 +32,7 @@
 			"items": [
 				{"type": "string"},
 				{"type": "string"},
-				{"type": "string"}
+				{"type": "object"}
 			],
 			"minItems": 3,
 			"maxItems": 3

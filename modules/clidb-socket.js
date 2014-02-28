@@ -35,7 +35,7 @@ module.exports.connect = function(namespace, redis, socket) {
 
 	socket.on('clidb.setitem', function(classkey, itemkey, item, qid) {
 		cli.setitem(classkey, itemkey, item, function(err, result) {
-			socket.emit('clidb.setitem', err, result, qid);
+			socket.emit('clidb.setitem', err, classkey, itemkey, item, qid);
 			if (err) console.log(err);
 		});
 	});

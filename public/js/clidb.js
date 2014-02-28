@@ -40,8 +40,14 @@ angular.module('clidb.services-controllers',[])
 
 		set : function(classkey, itemkey, value, qid) {
 			socketio.emit('clidb.setitem', classkey, itemkey, value, qid);
+			if (!service.data[classkey]) service.data[classkey] = {};
+			service.data[classkey][itemkey] = value;
 		},
 
+		/**
+		 * todo - don't set the item here, just produce the object,
+		 * we need nested/chained commands to produce the object then set it
+		 */
 		new : function(classkey, itemkey, qid) {
 			var definition = tv4.getSchema(classkey);
 			if (!definition) return linkCallback('unable find schema '+classkey, null, qid); 
@@ -49,8 +55,10 @@ angular.module('clidb.services-controllers',[])
 			if (!instance) return linkCallback('unable to create '+classkey, null, qid);
 			var valid = tv4.validate(instance,definition);
 			if (valid) {
+				if (!service.data[classkey]) service.data[classkey] = {};
+				service.data[classkey][itemkey] = value;
 				socketio.emit('clidb.setitem', classkey, itemkey, instance, qid);
-				service.api.edit(classkey, itemkey, qid);
+				//service.api.edit(classkey, itemkey, qid);
 			}
 			else linkCallback(tv4.error, null, qid);
 		},
@@ -188,8 +196,9 @@ angular.module('clidb.services-controllers',[])
 	});
 
 
-	socketio.on('clidb.setitem', function(err, data, qid){
+	socketio.on('clidb.setitem', function(err, classkey, itemkey, item, qid){
 		$rootScope.$apply(function(){
+			if (service.data[classkey] && err) service.data[classkey][itemkey] = null;
 			if (qid) linkCallback(err, data, qid);
 		}, true);
 	});
