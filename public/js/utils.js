@@ -1,21 +1,31 @@
-function utils(){
+utils = {
 
-	this.days = new Array('Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday');
-	this.months = new Array('January','February','March','April','May','June','July','August','September','October','November','December');
+	days: ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'],
+	months: ['January','February','March','April','May','June','July','August','September','October','November','December'],
+
+	formatDisplayDate: function(utcms) {
+
+		var d = new Date(utcms);
+		return d.getHours()+':'+d.getMinutes()+' '+this.days[d.getDay()]+' '+this.months[d.getMonth()]+' '+d.getFullYear();
+	},
+
+	/**
+	 * remove Boolean(val)==false elements from array and collaps down
+	 */
+	compressList: function(source) {
+
+		var temp = [];
+		for(var i in source) source[i] && temp.push(source[i]); 
+		angular.copy(temp,source);
+	},
+
+	/**
+	 * parse an array of json objects and return an array of objects        
+	 */
+	parseJSONArray: function(source) {
+		
+		var result = {};
+		for (var key in source) result[key] = JSON.parse(source[key]);
+		return result;
+	}
 }
-
-utils.prototype.formatDisplayDate = function(utcms){
-	var d = new Date(utcms);
-	return d.getHours()+':'+d.getMinutes()+' '+this.days[d.getDay()]+' '+this.months[d.getMonth()]+' '+d.getFullYear();
-}
-
-utils.prototype.compressList = function(source){
-	var temp = [];
-	for(var i in source) source[i] && temp.push(source[i]); 
-	angular.copy(temp,source);
-}
-
-if (typeof define === "function" && define.amd) {
-		define(function(){ return utils;} );
-}
-

@@ -85,7 +85,7 @@
 			"type": "array",
 			"items": [
 				{"type": "string"},
-				{"type": "string"}
+				{"type": "object"}
 			],
 			"minItems": 2,
 			"maxItems": 2

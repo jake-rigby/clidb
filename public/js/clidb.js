@@ -2,10 +2,160 @@
 
 angular.module('clidb.services-controllers',[])
 
-.factory('db', ['$rootScope', 'socket.io', '$http', '$location', function($rootScope, socketio, $http, $location) {
+.factory('db', ['$rootScope', 'socket.io', '$http', '$location', 'editStore', function($rootScope, socketio, $http, $location, editStore) {
 	
-	// cache
+	/*
+	 * instances are cached in classes, directly accessible through the data object
+	 */
 	var service = { data: {} };
+
+	/* 
+	 * Evaluate a ' ' delimied command expression (quotes accepted as one term)
+	 * tags the resulting command/query with a session-unique id
+	 * callbacks are indexed via this id
+	 */	
+	service.commands = {};
+
+	/*
+	 * callbacks are indexed in the callbacks dictionary via the unique command id
+	 */
+	var callbacks = {};
+
+	/*
+	 * hack to make sure api schema is asyncronously loaded before external eval 
+	 * not really required, the form service accepts json value schema so async not important
+	 */
+	var inited = false;
+
+	/*
+	 * parse a ' ' seperated string expression into an command name
+	 * and arguments
+	 */
+	service.eval = function(x, cb) {
+
+		// split by space char, allowing for full strings inside quotes - http://stackoverflow.com/questions/10530532/regexp-to-split-by-white-space-with-grouping-quotes
+		var parts = [];
+		x.replace(/"([^"]*)"|'([^']*)'|(\S+)/g, function(g0, g1, g2, g3) {
+			parts.push(g1 || g2 || g3 || '');
+		});	
+
+		// detect nested expressions in { } and do a recursion
+		var args = [];
+		for (var i in parts) {
+			var s = parts[i].match(/\{([^\)]+)\}/);
+			if (s) {
+				args[i] = function(){
+					service.eval(s[1], function(err, result) {
+						x = x.replace(s[0],result);
+						service.eval(x, cb);
+					})
+				}
+			} else {
+				args[i] = parts[i];
+			}
+		}
+
+		if (cb) args.push(cb);
+		return service.exec.apply(this, args);
+	}
+
+	service.exec = function() {
+
+		var cb = Object.prototype.toString.call(arguments[arguments.length - 1]) == '[object Function]' ? 
+				Array.prototype.pop.call(arguments) : 
+				null,
+			cmd = Array.prototype.shift.call(arguments),
+			args = [].slice.call(arguments),
+			qid = Date.now();
+
+		var str = [cmd].concat(args.slice(0, args.length)).join(' ');
+		
+		// index a generated callback - don't index commands with passed in callbacks
+
+		if (!cb) service.commands[qid] = {cmd: str, idx: qid};
+		callbacks[qid] = cb ? cb : service.callbacks[cmd];
+
+		if (inited) applyCommand(cmd, args, qid, cb);
+
+		else $http.get('schemas/api.json').then(function(result){
+			tv4.addSchema('api',result.data);
+			applyCommand(cmd, args, qid, cb);
+			inited = true;
+		});
+
+		return qid;
+	}
+
+	function applyCommand(cmd, args, id, cb) {
+
+		var op = service.api[cmd],
+			schm = tv4.getSchema('api#'+cmd);
+
+		if (op && schm && tv4.validate(args, schm)) { // <-- won't validate zero alength arrays
+			
+			args.push(id);
+			op.apply(applyCommand, args);
+		
+		} else {
+		
+			var err = schm ?
+				tv4.error.message : 'unknown command : '+ cmd;
+			linkCallback(err, null, id);
+		}
+
+		return id;
+	}
+
+	/**
+	 * link async results to cached commands and their callbacks
+	 */
+	function linkCallback(err, reply, qid) {
+	
+		if (callbacks[qid]) {
+			callbacks[qid](err, reply, qid);
+			delete callbacks[qid];
+	
+		} else if (service.commands[qid]) {
+			service.commands[qid].err = err;
+			service.commands[qid].reply = reply;
+		}
+	}
+
+
+	/**
+	 * create a minimal instance described by a schema
+	 */
+ 	function create(s) {
+
+ 		if (!s) return null
+ 		else if (s.type=='array') return [create(s.items)];
+ 		else if (s.type=='array') return [];
+		else if (s.type=='object'){
+			var r = {};
+			for (var p in s.properties){
+				
+				if (s.properties[p].type=='object') r[p] = create(s.properties[p]);
+				else if (s.properties[p].type=='number') r[p] = 0;
+				else if (s.properties[p].type=='array') r[p] = create(s.properties[p]);
+				else if (s.properties[p].type=='string') r[p]='';
+				else if (s.properties[p].$ref && tv4.getSchema(s.properties[p].$ref)) r[p] = create(tv4.getSchema(s.properties[p].$ref));
+				else r[p] = null;
+				//else if schemas[s.properties[p].type] r[p] = create(schemas[s.properties[p].type]); // <-- search referenced schemas here
+			}
+			return r
+		} 
+		else return '';	
+	}
+
+	// expose the create method
+	service.create = create;
+
+	// load local api schema to validate command strings
+	$http.get('schemas/api.json').then(function(result){
+		tv4.addSchema('api',result.data);
+		inited = true;
+	});
+
 
 	/**
 	 * an api can comprise of 4 parts :
@@ -49,8 +199,15 @@ angular.module('clidb.services-controllers',[])
 		 * we need nested/chained commands to produce the object then set it
 		 */
 		new : function(classkey, itemkey, qid) {
+			var schms = tv4.getSchemaUris();
+			var schm = tv4.getSchema(classkey);
+			if (!schm) return linkCallback('unable to find definition '+classkey, null, qid);
+			var instance = create(schm);
+			if (!instance) return linkCallback('error creating new  '+classkey, null, qid);
+			linkCallback(null, instance, qid);
+			/*
 			var definition = tv4.getSchema(classkey);
-			if (!definition) return linkCallback('unable find schema '+classkey, null, qid); 
+			if (!definition) return linkCallback('unable find schema '+classkey, null, qid);
 			var instance = create(definition);
 			if (!instance) return linkCallback('unable to create '+classkey, null, qid);
 			var valid = tv4.validate(instance,definition);
@@ -61,6 +218,7 @@ angular.module('clidb.services-controllers',[])
 				//service.api.edit(classkey, itemkey, qid);
 			}
 			else linkCallback(tv4.error, null, qid);
+			*/
 		},
 
 		list : function(classkey, qid) {
@@ -73,9 +231,13 @@ angular.module('clidb.services-controllers',[])
 			else linkCallback(tv4.error ? tv4.error : schema ? null : 'unknown schema id', schema, qid);
 		},
 
-		edit : function(classkey, itemkey, qid) {
+		edit : function(classkey, item, qid) {
 			var schema = tv4.getSchema(classkey);
-			if (schema) $location.path('/form').search({key:itemkey, schema:JSON.stringify(schema), schemaName:classkey, qid:qid});
+			if (schema && tv4.validate(item, schema)) {
+				editStore.schema = schema;
+				editStoreObject = item;
+				$location.path('/form').search({key:itemkey, schema:JSON.stringify(schema), schemaName:classkey, qid:qid});
+			}
 			else linkCallback(tv4.error ? tv4.error : schema ? null : 'schema not found', schema, qid);
 		},
 
@@ -124,7 +286,7 @@ angular.module('clidb.services-controllers',[])
 
 		list : function(err, result, id) {
 			var reply = [],
-				list = parseJSONArray(result);
+				list = utils.parseJSONArray(result);
 			for (var key in list) reply.push(key);
 			service.commands[id].reply = reply;
 			service.commands[id].err = err;
@@ -173,7 +335,7 @@ angular.module('clidb.services-controllers',[])
 	socketio.on('clidb.all',function(err, data){
 		$rootScope.$apply(function(){
 			service.data = {};
-			for (var c in data) service.data[c] = parseJSONArray(data[c]);
+			for (var c in data) service.data[c] = utils.parseJSONArray(data[c]);
 		})
 	});
 	
@@ -181,7 +343,7 @@ angular.module('clidb.services-controllers',[])
 	socketio.on('clidb.class',function(err, classkey, value, qid){
 		$rootScope.$apply(function(){
 			if (!value || !classkey) return linkCallback('not found', null, qid);
-			service.data[classkey] = parseJSONArray(value);
+			service.data[classkey] = utils.parseJSONArray(value);
 			if (qid) linkCallback(err, value, qid);
 		});
 	});
@@ -210,165 +372,19 @@ angular.module('clidb.services-controllers',[])
 		}, true);
 	});
 
-
-	/* Command Evaluation
-	 *
-	 * evaluate a ' ' delimied command expression (quotes accepted as one term)
-	 * tags the resulting command/query with a session-unique id
-	 * callbacks are indexed via this id
-	 */
-	
-	service.commands = {};
-
-	var callbacks = {};
-
-	// hack to make sure api schema is asyncronously loaded before external eval 
-	// not really required, the form service accepts json value schema so async not important
-	var inited = false;
-
-	/*
-	 * parse a ' ' seperated string expression into an command name
-	 * and arguments
-	 */
-	service.eval = function(x, cb) {
-
-		// http://stackoverflow.com/questions/10530532/regexp-to-split-by-white-space-with-grouping-quotes
-		var args = [];
-		x.replace(/"([^"]*)"|'([^']*)'|(\S+)/g, function(g0,g1,g2,g3){
-			args.push(g1 || g2 || g3 || '');
-		});
-		if (cb) args.push(cb);
-		return service.do.apply(this, args);
-	}
-
-	service.do = function() {
-		var cb = Object.prototype.toString.call(arguments[arguments.length - 1]) == '[object Function]' ? 
-				Array.prototype.pop.call(arguments) : 
-				null,
-			cmd = Array.prototype.shift.call(arguments),
-			args = [].slice.call(arguments),
-			qid = Date.now();
-
-		var str = [cmd].concat(args.slice(0, args.length)).join(' ');
-		
-		// index a generated callback - don't index commands with passed in callbacks
-
-		if (!cb) service.commands[qid] = {cmd: str, idx: qid};
-		callbacks[qid] = cb ? cb : service.callbacks[cmd];
-
-		if (inited) p(cmd, args, qid, cb);
-
-		else $http.get('schemas/api.json').then(function(result){
-			tv4.addSchema('api',result.data);
-			p(cmd, args, qid, cb);
-			inited = true;
-		});
-
-		return qid;
-
-	}
-
-	function p(cmd, args, id, cb) {
-
-		var op = service.api[cmd],
-			schm = tv4.getSchema('api#'+cmd);
-
-		if (op && schm && tv4.validate(args, schm)) { // <-- won't validate zero alength arrays
-			
-			args.push(id);
-			op.apply(p, args);
-		
-		} else {
-		
-			var err = schm ?
-				tv4.error.message : 'unknown command : '+ cmd;
-			linkCallback(err, null, id);
-		}
-
-		return id;
-	}
-
-	/**
-	 * link async results to cached commands and their callbacks
-	 */
-	function linkCallback(err, reply, qid) {
-	
-		if (callbacks[qid]) {
-			callbacks[qid](err, reply, qid);
-			delete callbacks[qid];
-	
-		} else if (service.commands[qid]) {
-			service.commands[qid].err = err;
-			service.commands[qid].reply = reply;
-		}
-	}
-
-
-	/**
-	 * parse an array of json objects and return an array of objects        
-	 */
-	function parseJSONArray(source){
-		var result = {};
-		for (var key in source) result[key] = JSON.parse(source[key]);
-		return result;
-	}
-
-	/**
-	 * create a minimal instance described by a schema
-	 */
- 	function create(s) {
- 		if (!s) return null
- 		else if (s.type=='array') return [create(s.items)];
- 		else if (s.type=='array') return [];
-		else if (s.type=='object'){
-			var r = {};
-			for (var p in s.properties){
-				
-				if (s.properties[p].type=='object') {
-
-					r[p] = create(s.properties[p]);
-					
-				} else if (s.properties[p].type=='number') {
-
-					r[p] = 0;
-
-				} else if (s.properties[p].type=='array') {
-
-					r[p] = create(s.properties[p]);
-
-				} else if (s.properties[p].type=='string') {
-
-					r[p]='';
-
-				} else if (s.properties[p].$ref && tv4.getSchema(s.properties[p].$ref)) {
-
-					r[p] = create(tv4.getSchema(s.properties[p].$ref));
-
-				} else {
-
-					r[p] = null;
-
-				}
-				//else if schemas[s.properties[p].type] r[p] = create(schemas[s.properties[p].type]); // <-- search referenced schemas here
-			}
-			return r
-		} 
-		else return '';	
-	}
-
-	// expose the create method
-	service.create = create;
-
-	// load local api schema to validate command strings
-	$http.get('schemas/api.json').then(function(result){
-		tv4.addSchema('api',result.data);
-		inited = true;
-	});
-
-
 	return service;
 
 }])
+
+
+.factory('editStore', function() {
+
+	return {
+		schema: {},
+		obj: {}
+	}
+})
+
 
 
 .controller('clidb.ConsoleController',['$scope', 'db', function($scope, db) {
@@ -424,20 +440,20 @@ angular.module('clidb.services-controllers',[])
 }])
 
 
-.controller('clidb.FormController', ['$scope', '$routeParams', 'db', '$window', '$location',
-	function($scope, $routeParams, db, $window, $location) {
+.controller('clidb.FormController', ['$scope', '$routeParams', 'db', '$window', '$location', 'editStore',
+	function($scope, $routeParams, db, $window, $location, editStore) {
 
 	var idx = 0;
 	
 	$scope.key = $routeParams.key;
 	$scope.schemaName = $routeParams.schemaName;
-	$scope.schema = JSON.parse($routeParams.schema);
+	//$scope.schema = JSON.parse($routeParams.schema);
+	$scope.schema = editStore.schema;
 	$scope.path = $routeParams.path;
 	
 	/*
 	 * If the URL parameter 'template' is present, parse that as the root
 	 * otherwise try and load from the db with the 'key' parameter
-	 */
 	try {
 
 		$scope.root = JSON.parse($routeParams.template);
@@ -446,7 +462,8 @@ angular.module('clidb.services-controllers',[])
 
 	} catch (e) {
 
-		db.eval('get ' + $scope.schemaName + ' "' + $scope.key + '"', function(err, result) { // <-- we use 'eval' so we can pass out own callback - this is a failing of the clidb module
+		//db.eval('get ' + $scope.schemaName + ' "' + $scope.key + '"', function(err, result) { // <-- we use 'eval' so we can pass out own callback - this is a failing of the clidb module
+		db.exec('get', $scope.schemaName, $scope.key, function(err, result) {
 			
 			$scope.root = JSON.parse(result); 
 			//console.log('template method', $scope.root);
@@ -454,6 +471,8 @@ angular.module('clidb.services-controllers',[])
 
 		});
 	}
+	 */
+	 $scope.root = editStore.obj;
 
 	/*
 	 * crawl the root object to the given 'path'
