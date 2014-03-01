@@ -33,26 +33,41 @@ angular.module('clidb.services-controllers',[])
 	 */
 	service.eval = function(x, cb) {
 
-		// split by space char, allowing for full strings inside quotes - http://stackoverflow.com/questions/10530532/regexp-to-split-by-white-space-with-grouping-quotes
-		var parts = [];
-		x.replace(/"([^"]*)"|'([^']*)'|(\S+)/g, function(g0, g1, g2, g3) {
-			parts.push(g1 || g2 || g3 || '');
-		});	
+		var parts = utils.splitWhiteSpaceOutsideQuotes(x);
 
 		// detect nested expressions in { } and do a recursion
-		var args = [];
+		var args = new Array(parts.length);
+
 		for (var i in parts) {
-			var s = parts[i].match(/\{([^\)]+)\}/);
-			if (s) {
-				args[i] = function(){
+			function(part, idx) {
+				var s = part.match(/\{([^\)]+)\}/);
+				if (s) {
 					service.eval(s[1], function(err, result) {
-						x = x.replace(s[0],result);
-						service.eval(x, cb);
+						var type = Object.prototype.toString.call(result);
+						if (type == '[object Object]') {
+							parts[idx] = result;
+						} else {
+							parts[idx] = part.replace(s[0], result);
+						}
 					})
 				}
+						
+			}(parts[i])
+
+			if (s) {
+				function(t) {
+					service.eval(t[1], function(err, result) {
+						x = x.replace(t[0],result);
+						//service.eval(x, cb);
+					})					
+				}(s);
 			} else {
 				args[i] = parts[i];
 			}
+		}
+
+		function check() {
+			for (var i in args) if (!args[i]) return false;
 		}
 
 		if (cb) args.push(cb);

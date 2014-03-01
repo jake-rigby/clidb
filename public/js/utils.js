@@ -27,5 +27,19 @@ utils = {
 		var result = {};
 		for (var key in source) result[key] = JSON.parse(source[key]);
 		return result;
+	},
+
+
+	/**
+	 * split by space char, allowing for full strings inside quotes 
+	 * http://stackoverflow.com/questions/10530532/regexp-to-split-by-white-space-with-grouping-quotes
+	 */
+	splitWhiteSpaceOutsideQuotes : function(x) {
+
+		var parts = [];
+		x.replace(/"([^"]*)"|'([^']*)'|(\S+)/g, function(g0, g1, g2, g3) {
+			parts.push(g1 || g2 || g3 || '');
+		});	
 	}
+
 }
