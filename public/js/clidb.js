@@ -31,57 +31,67 @@ angular.module('clidb.services-controllers',[])
 	 * parse a ' ' seperated string expression into an command name
 	 * and arguments
 	 */
-	service.eval = function(x, cb) {
+	service.eval = function(x, cb, qid) {
 
-		var parts = utils.splitWhiteSpaceOutsideQuotes(x);
+		if (!qid) qid = Date.now();
+
+		var inners = utils.extractSectionsinCurlys(x),
+			replacers = utils.extractSectionsinCurlys(x);
+
+		for (var i = 0; i < replacers.length; i++) {
+			x = x.replace(replacers[i], '$REPLACE$'+i);
+		}
+		
+		var parts = utils.splitWhiteSpaceOutsideQuotes(x),
+			cmd = parts.shift();
+
+
+
 
 		// detect nested expressions in { } and do a recursion
 		var args = new Array(parts.length);
 
-		for (var i in parts) {
-			function(part, idx) {
+		for (var i = 0; i < parts.length; i++) {
+			
+			(function(part, idx) {
+				
 				var s = part.match(/\{([^\)]+)\}/);
 				if (s) {
 					service.eval(s[1], function(err, result) {
 						var type = Object.prototype.toString.call(result);
-						if (type == '[object Object]') {
-							parts[idx] = result;
-						} else {
-							parts[idx] = part.replace(s[0], result);
-						}
-					})
+						if (type == '[object Object]')  args[idx] = result;
+						else args[idx] = part.replace(s[0], result);
+						check();
+					}, qid + i)
+				} else {
+					args[i] = part;
+					check();
 				}
-						
-			}(parts[i])
 
-			if (s) {
-				function(t) {
-					service.eval(t[1], function(err, result) {
-						x = x.replace(t[0],result);
-						//service.eval(x, cb);
-					})					
-				}(s);
-			} else {
-				args[i] = parts[i];
-			}
+			})(parts[i])
+			
 		}
 
 		function check() {
-			for (var i in args) if (!args[i]) return false;
+			for (var i in args) if (!args[i]) return;
+			service.exec(cmd, args, cb, qid);
 		}
 
-		if (cb) args.push(cb);
-		return service.exec.apply(this, args);
+		return qid;
 	}
 
-	service.exec = function() {
+	service.exec = function(cmd, args, cb, qid) { // command, arg1, arg2... argN, callback, id
 
+		/*
+		var qid = Array.prototype.pop.call(arguments);
 		var cb = Object.prototype.toString.call(arguments[arguments.length - 1]) == '[object Function]' ? 
 				Array.prototype.pop.call(arguments) : 
 				null,
 			cmd = Array.prototype.shift.call(arguments),
-			args = [].slice.call(arguments),
-			qid = Date.now();
+			args = [].slice.call(arguments);
+		*/
+		
+		if (!qid) qid = Date.now();
 
 		var str = [cmd].concat(args.slice(0, args.length)).join(' ');
 		

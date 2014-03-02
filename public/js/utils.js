@@ -40,6 +40,24 @@ utils = {
 		x.replace(/"([^"]*)"|'([^']*)'|(\S+)/g, function(g0, g1, g2, g3) {
 			parts.push(g1 || g2 || g3 || '');
 		});	
+		return parts;
+	},
+
+	/**
+	 * does not support nesting
+	 */
+	extractSectionsinCurlys : function(x, keepCurlys) {
+
+		if (keepCurlys) return x.match(/{([^}]+)}/g);
+		else return x.match(/[^{}]+(?=\})/g);
+	}
+
+	getUid : function() {
+		var n = Date.now();
+		if (this.last != n) {
+			this.last
+			return n.toString()+'.0'
+		} 
 	}
 
 }
