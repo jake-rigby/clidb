@@ -223,31 +223,29 @@ angular.module('clidb.services-controllers',[])
 			service.data[classkey][itemkey] = value;
 		},
 
-		/**
-		 * todo - don't set the item here, just produce the object,
-		 * we need nested/chained commands to produce the object then set it
-		 */
 		new : function(classkey, qid) {
-			var schms = tv4.getSchemaUris();
 			var schm = tv4.getSchema(classkey);
 			if (!schm) return linkCallback('unable to find definition '+classkey, null, qid);
 			var instance = create(schm);
-			if (!instance) return linkCallback('error creating new  '+classkey, null, qid);
+			if (!instance) return linkCallback('error generating new  '+classkey, null, qid);
 			linkCallback(null, instance, qid);
-			/*
-			var definition = tv4.getSchema(classkey);
-			if (!definition) return linkCallback('unable find schema '+classkey, null, qid);
-			var instance = create(definition);
-			if (!instance) return linkCallback('unable to create '+classkey, null, qid);
-			var valid = tv4.validate(instance,definition);
-			if (valid) {
-				if (!service.data[classkey]) service.data[classkey] = {};
-				service.data[classkey][itemkey] = value;
-				socketio.emit('clidb.setitem', classkey, itemkey, instance, qid);
-				//service.api.edit(classkey, itemkey, qid);
+		},
+
+		/**
+		 * create and edit in same step
+		 */
+		create : function(classkey, itemkey, qid) {
+			var schm = tv4.getSchema(classkey);
+			if (!schm) return linkCallback('unable to find definition '+classkey, null, qid);
+			var instance = create(schm);
+			if (!instance) return linkCallback('error creating '+classkey+' '+itemkey, null, qid);
+			editStore.schema = schm;
+			editStore.obj = instance;
+			editStore.cb = function(err, result) {
+				//linkCallback(err, result, qid);
+				service.api.set(classkey, itemkey, result, qid);
 			}
-			else linkCallback(tv4.error, null, qid);
-			*/
+			$location.path('/form').search({schema:JSON.stringify(schm), schemaName:classkey, qid:qid});
 		},
 
 		list : function(classkey, qid) {
@@ -312,6 +310,11 @@ angular.module('clidb.services-controllers',[])
 		},
 
 		new : function(err, result, id) {
+			service.commands[id].reply = result;
+			service.commands[id].err = err;
+		},
+
+		create : function(err, result, id) {
 			service.commands[id].reply = result;
 			service.commands[id].err = err;
 		},
