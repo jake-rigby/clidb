@@ -53,11 +53,10 @@
 			"id": "#new",
 			"type": "array",
 			"items": [
-				{"type": "string"},
 				{"type": "string"}
 			],
-			"minItems": 2,
-			"maxItems": 2
+			"minItems": 1,
+			"maxItems": 1
 		},
 
 		"list": {

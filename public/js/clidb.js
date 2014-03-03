@@ -33,8 +33,9 @@ angular.module('clidb.services-controllers',[])
 	 */
 	service.eval = function(x, cb, qid) {
 
-		var x = x;
-		var aborted = false;
+		var x = x,
+			aborted = false,
+			completed = false;
 
 		if (!qid) qid = Date.now();
 
@@ -45,89 +46,54 @@ angular.module('clidb.services-controllers',[])
 		if (replacers) for (var i = 0; i < replacers.length; i++) {
 			var key = '$REPLACE$' + i;
 			x = x.replace(replacers[i], key);
-			(function(y, key, index) {
+		}
+
+		var parts = utils.splitWhiteSpaceOutsideQuotes(x),
+			cmd = parts.shift();
+
+		if (replacers) for (var i = 0; i < replacers.length; i++) {			
+			(function(y, key, index, parts, results, aborted) {
 				service.eval(y, function(err, result) {
 					inners[index] = undefined;
 					if (err) {
-						cb(err, null);
+						if (cb) cb(err, null);
 						return abort();
 					}
 					results[key] = result;
 					complete();
 				}, qid + i)
-			})(inners[i], key, i);
+			})(inners[i], key, i, parts, results, aborted);
 		}
-		
-		var parts = utils.splitWhiteSpaceOutsideQuotes(x),
-			cmd = parts.shift();
-
-		complete();
 
 		function complete() {
-			if (aborted) return;
+			if (aborted || completed) return;
 			for (var i in inners) if (inners[i]) return;
 			for (i =  0; i < parts.length; i++) {// in results) {
-				var result;
-				try { result = JSON.parse(results[parts[i]])} catch (e) {
+				var key = parts[i],
 					result = results[parts[i]];
+				if (result) {
+					try { 
+						result = JSON.parse(results[parts[i]])
+					} catch (e) {
+						result = results[parts[i]];
+					}
+					parts[i] = result;
 				}
-				parts[i] = result;
 			}
-			service.exec(cmd, parts, cb, qid);
+			completed = true;
+			service.exec(cmd, parts, cb, qid);			
 		}
+
+		complete();
 
 		function abort() {
 			var aborted = true;
 		}
 
 		return qid;
-
-		/*
-
-		// detect nested expressions in { } and do a recursion
-		var args = new Array(parts.length);
-
-		for (var i = 0; i < parts.length; i++) {
-			
-			(function(part, idx) {
-				
-				var s = part.match(/\{([^\)]+)\}/);
-				if (s) {
-					service.eval(s[1], function(err, result) {
-						var type = Object.prototype.toString.call(result);
-						if (type == '[object Object]')  args[idx] = result;
-						else args[idx] = part.replace(s[0], result);
-						check();
-					}, qid + i)
-				} else {
-					args[i] = part;
-					check();
-				}
-
-			})(parts[i])
-			
-		}
-
-		function check() {
-			for (var i in args) if (!args[i]) return;
-			service.exec(cmd, args, cb, qid);
-		}
-
-		return qid;
-
-		*/
 	}
 
-	service.exec = function(cmd, args, cb, qid) { // command, arg1, arg2... argN, callback, id
-
-		/*
-		var qid = Array.prototype.pop.call(arguments);
-		var cb = Object.prototype.toString.call(arguments[arguments.length - 1]) == '[object Function]' ? 
-				Array.prototype.pop.call(arguments) : 
-				null,
-			cmd = Array.prototype.shift.call(arguments),
-			args = [].slice.call(arguments);
-		*/
+	service.exec = function(cmd, args, cb, qid) {
 		
 		if (!qid) qid = Date.now();
 
@@ -156,7 +122,7 @@ angular.module('clidb.services-controllers',[])
 
 		if (op && schm && tv4.validate(args, schm)) { // <-- won't validate zero alength arrays
 			
-			args.push(id);
+			args.push(id); // <-- ??
 			op.apply(applyCommand, args);
 		
 		} else {
@@ -261,7 +227,7 @@ angular.module('clidb.services-controllers',[])
 		 * todo - don't set the item here, just produce the object,
 		 * we need nested/chained commands to produce the object then set it
 		 */
-		new : function(classkey, itemkey, qid) {
+		new : function(classkey, qid) {
 			var schms = tv4.getSchemaUris();
 			var schm = tv4.getSchema(classkey);
 			if (!schm) return linkCallback('unable to find definition '+classkey, null, qid);
@@ -298,8 +264,11 @@ angular.module('clidb.services-controllers',[])
 			var schema = tv4.getSchema(classkey);
 			if (schema && tv4.validate(item, schema)) {
 				editStore.schema = schema;
-				editStoreObject = item;
-				$location.path('/form').search({key:itemkey, schema:JSON.stringify(schema), schemaName:classkey, qid:qid});
+				editStore.obj = item;
+				editStore.cb = function(err, result) {
+					linkCallback(err, result, qid);
+				}
+				$location.path('/form').search({schema:JSON.stringify(schema), schemaName:classkey, qid:qid});
 			}
 			else linkCallback(tv4.error ? tv4.error : schema ? null : 'schema not found', schema, qid);
 		},
@@ -424,7 +393,7 @@ angular.module('clidb.services-controllers',[])
 	socketio.on('clidb.setitem', function(err, classkey, itemkey, item, qid){
 		$rootScope.$apply(function(){
 			if (service.data[classkey] && err) service.data[classkey][itemkey] = null;
-			if (qid) linkCallback(err, data, qid);
+			if (qid) linkCallback(err, item, qid);
 		}, true);
 	});
 
@@ -444,7 +413,10 @@ angular.module('clidb.services-controllers',[])
 
 	return {
 		schema: {},
-		obj: {}
+		obj: {},
+		cb: function(err, result) {
+			console.log('editStore default callback ',err, result);
+		}
 	}
 })
 
@@ -510,8 +482,7 @@ angular.module('clidb.services-controllers',[])
 	
 	$scope.key = $routeParams.key;
 	$scope.schemaName = $routeParams.schemaName;
-	//$scope.schema = JSON.parse($routeParams.schema);
-	$scope.schema = editStore.schema;
+	$scope.schema = $routeParams.schema ? JSON.parse($routeParams.schema) : editStore.schema;
 	$scope.path = $routeParams.path;
 	
 	/*
@@ -536,6 +507,7 @@ angular.module('clidb.services-controllers',[])
 	}
 	 */
 	 $scope.root = editStore.obj;
+	 init();
 
 	/*
 	 * crawl the root object to the given 'path'
@@ -677,7 +649,7 @@ angular.module('clidb.services-controllers',[])
 
 
 	$scope.editChild = function(schema, path) {
-		db.api.set($scope.schemaName, $scope.key, $scope.root, $routeParams.qid);
+		//db.api.set($scope.schemaName, $scope.key, $scope.root, $routeParams.qid);
 		$location.path('/form').search({
 			key: $scope.key, 
 			schema: JSON.stringify(schema), 
@@ -687,12 +659,14 @@ angular.module('clidb.services-controllers',[])
 	}
 
 	$scope.save = function() {
-		db.api.set($scope.schemaName, $scope.key, $scope.root, $routeParams.qid);
+		//db.api.set($scope.schemaName, $scope.key, $scope.root, $routeParams.qid);
+		editStore.cb(null,  $scope.root);
 		$window.history.back();
 	}
 	
 	$scope.cancel = function() {
-		db.api.dlt($scope.schemaName, $scope.key, $routeParams.qid);
+		//db.api.dlt($scope.schemaName, $scope.key, $routeParams.qid);
+		editStore.cb('User cancelled', null);
 		$window.history.back();
 	}
 
