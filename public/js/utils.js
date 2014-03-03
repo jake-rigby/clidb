@@ -50,7 +50,7 @@ utils = {
 
 		if (keepCurlys) return x.match(/{([^}]+)}/g);
 		else return x.match(/[^{}]+(?=\})/g);
-	}
+	},
 
 	getUid : function() {
 		var n = Date.now();

@@ -33,20 +33,56 @@ angular.module('clidb.services-controllers',[])
 	 */
 	service.eval = function(x, cb, qid) {
 
+		var x = x;
+		var aborted = false;
+
 		if (!qid) qid = Date.now();
 
 		var inners = utils.extractSectionsinCurlys(x),
-			replacers = utils.extractSectionsinCurlys(x);
+			replacers = utils.extractSectionsinCurlys(x, true),
+			results = {};
 
-		for (var i = 0; i < replacers.length; i++) {
-			x = x.replace(replacers[i], '$REPLACE$'+i);
+		if (replacers) for (var i = 0; i < replacers.length; i++) {
+			var key = '$REPLACE$' + i;
+			x = x.replace(replacers[i], key);
+			(function(y, key, index) {
+				service.eval(y, function(err, result) {
+					inners[index] = undefined;
+					if (err) {
+						cb(err, null);
+						return abort();
+					}
+					results[key] = result;
+					complete();
+				}, qid + i)
+			})(inners[i], key, i);
 		}
 		
 		var parts = utils.splitWhiteSpaceOutsideQuotes(x),
 			cmd = parts.shift();
 
+		complete();
 
+		function complete() {
+			if (aborted) return;
+			for (var i in inners) if (inners[i]) return;
+			for (i =  0; i < parts.length; i++) {// in results) {
+				var result;
+				try { result = JSON.parse(results[parts[i]])} catch (e) {
+					result = results[parts[i]];
+				}
+				parts[i] = result;
+			}
+			service.exec(cmd, parts, cb, qid);
+		}
 
+		function abort() {
+			var aborted = true;
+		}
+
+		return qid;
+
+		/*
 
 		// detect nested expressions in { } and do a recursion
 		var args = new Array(parts.length);
@@ -78,6 +114,8 @@ angular.module('clidb.services-controllers',[])
 		}
 
 		return qid;
+
+		*/
 	}
 
 	service.exec = function(cmd, args, cb, qid) { // command, arg1, arg2... argN, callback, id
