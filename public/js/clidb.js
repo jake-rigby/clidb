@@ -2,7 +2,8 @@
 
 angular.module('clidb.services-controllers',[])
 
-.factory('db', ['$rootScope', 'socket.io', '$http', '$location', 'editStore', function($rootScope, socketio, $http, $location, editStore) {
+.factory('db', ['$rootScope', 'socket.io', '$http', '$location', 'editStore', 'utils',
+	function($rootScope, socketio, $http, $location, editStore, utils) {
 	
 	/*
 	 * instances are cached in classes, directly accessible through the data object
@@ -231,23 +232,6 @@ angular.module('clidb.services-controllers',[])
 			linkCallback(null, instance, qid);
 		},
 
-		/**
-		 * create and edit in same step
-		 */
-		create : function(classkey, itemkey, qid) {
-			var schm = tv4.getSchema(classkey);
-			if (!schm) return linkCallback('unable to find definition '+classkey, null, qid);
-			var instance = create(schm);
-			if (!instance) return linkCallback('error creating '+classkey+' '+itemkey, null, qid);
-			editStore.schema = schm;
-			editStore.obj = instance;
-			editStore.cb = function(err, result) {
-				//linkCallback(err, result, qid);
-				service.api.set(classkey, itemkey, result, qid);
-			}
-			$location.path('/form').search({schema:JSON.stringify(schm), schemaName:classkey, qid:qid});
-		},
-
 		list : function(classkey, qid) {
 			socketio.emit('clidb.getclass', classkey, qid);
 		},
@@ -260,21 +244,27 @@ angular.module('clidb.services-controllers',[])
 
 		edit : function(classkey, item, qid) {
 			var schema = tv4.getSchema(classkey);
+			if (!schema) return linkCallback('unable to find definition '+classkey, null, qid);
 			if (schema && tv4.validate(item, schema)) {
 				editStore.schema = schema;
 				editStore.obj = item;
 				editStore.cb = function(err, result) {
 					linkCallback(err, result, qid);
+					//service.api.set(classkey, itemkey, result, qid);
 				}
 				$location.path('/form').search({schema:JSON.stringify(schema), schemaName:classkey, qid:qid});
 			}
 			else linkCallback(tv4.error ? tv4.error : schema ? null : 'schema not found', schema, qid);
 		},
 
-		help : function() {
+		help : function(qid) {
 			var result = [];
 			for (var api in tv4.getSchema('api').definitions) result.push(api);
-			linkCallback(tv4.error, result, arguments[arguments.length-1]);
+			linkCallback(tv4.error, result, qid);
+		},
+
+		result : function(qid) {
+			linkCallback(null, editStore.obj, qid);
 		}
 	}
 
@@ -314,11 +304,6 @@ angular.module('clidb.services-controllers',[])
 			service.commands[id].err = err;
 		},
 
-		create : function(err, result, id) {
-			service.commands[id].reply = result;
-			service.commands[id].err = err;
-		},
-
 		list : function(err, result, id) {
 			var reply = [],
 				list = utils.parseJSONArray(result);
@@ -340,7 +325,13 @@ angular.module('clidb.services-controllers',[])
 		edit : function(err, result, id) {
 			service.commands[id].reply = result;
 			service.commands[id].err = err;			
-		}
+		},
+
+		result : function(err, result, id) {
+			service.commands[id].reply = result;
+			service.commands[id].err = err;			
+		},
+
 
 	}
 
@@ -487,36 +478,13 @@ angular.module('clidb.services-controllers',[])
 	$scope.schemaName = $routeParams.schemaName;
 	$scope.schema = $routeParams.schema ? JSON.parse($routeParams.schema) : editStore.schema;
 	$scope.path = $routeParams.path;
-	
-	/*
-	 * If the URL parameter 'template' is present, parse that as the root
-	 * otherwise try and load from the db with the 'key' parameter
-	try {
-
-		$scope.root = JSON.parse($routeParams.template);
-		//console.log('template method', $scope.template);
-		init();
-
-	} catch (e) {
-
-		//db.eval('get ' + $scope.schemaName + ' "' + $scope.key + '"', function(err, result) { // <-- we use 'eval' so we can pass out own callback - this is a failing of the clidb module
-		db.exec('get', $scope.schemaName, $scope.key, function(err, result) {
-			
-			$scope.root = JSON.parse(result); 
-			//console.log('template method', $scope.root);
-			init();
-
-		});
-	}
-	 */
-	 $scope.root = editStore.obj;
-	 init();
+	$scope.root = editStore.obj;
 
 	/*
 	 * crawl the root object to the given 'path'
 	 * or load the root as the edit target
 	 */
-	function init() {
+	(function init() {
 
 		if ($scope.path) {
 			var p = angular.copy($scope.path),
@@ -532,7 +500,7 @@ angular.module('clidb.services-controllers',[])
 		//console.log('validation results ', $scope.obj, $scope.schema, tv4.error, valid);
 		$scope.items = parse($scope.schema, $scope.obj, 0);
 
-	}
+	})();
 
 
 
@@ -662,13 +630,11 @@ angular.module('clidb.services-controllers',[])
 	}
 
 	$scope.save = function() {
-		//db.api.set($scope.schemaName, $scope.key, $scope.root, $routeParams.qid);
 		editStore.cb(null,  $scope.root);
 		$window.history.back();
 	}
 	
 	$scope.cancel = function() {
-		//db.api.dlt($scope.schemaName, $scope.key, $routeParams.qid);
 		editStore.cb('User cancelled', null);
 		$window.history.back();
 	}
@@ -725,3 +691,60 @@ angular.module('clidb.services-controllers',[])
 
 
 }])
+
+.factory('utils', function() {
+
+	return {
+
+	/**
+	 * remove Boolean(val)==false elements from array and collaps down
+	 */
+	compressList: function(source) {
+
+		var temp = [];
+		for(var i in source) source[i] && temp.push(source[i]); 
+		angular.copy(temp,source);
+	},
+
+	/**
+	 * parse an array of json objects and return an array of objects        
+	 */
+	parseJSONArray: function(source) {
+		
+		var result = {};
+		for (var key in source) result[key] = JSON.parse(source[key]);
+		return result;
+	},
+
+
+	/**
+	 * split by space char, allowing for full strings inside quotes 
+	 * http://stackoverflow.com/questions/10530532/regexp-to-split-by-white-space-with-grouping-quotes
+	 */
+	splitWhiteSpaceOutsideQuotes : function(x) {
+
+		var parts = [];
+		x.replace(/"([^"]*)"|'([^']*)'|(\S+)/g, function(g0, g1, g2, g3) {
+			parts.push(g1 || g2 || g3 || '');
+		});	
+		return parts;
+	},
+
+	/**
+	 * does not support nesting
+	 */
+	extractSectionsinCurlys : function(x, keepCurlys) {
+
+		if (keepCurlys) return x.match(/{([^}]+)}/g);
+		else return x.match(/[^{}]+(?=\})/g);
+	},
+
+	getUid : function() {
+		var n = Date.now();
+		if (this.last != n) {
+			this.last
+			return n.toString()+'.0'
+		} 
+	}
+	}
+})

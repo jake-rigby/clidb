@@ -59,17 +59,6 @@
 			"maxItems": 1
 		},
 
-		"create": {
-			"id": "#create",
-			"type": "array",
-			"items": [
-				{"type": "string"},
-				{"type": "string"}
-			],
-			"minItems": 2,
-			"maxItems": 2
-		},
-
 		"list": {
 			"id": "#list",
 			"type": "array",
@@ -109,7 +98,18 @@
 			},
 			"minItems": 0,
 			"maxItems": 0
+		},
+
+		"result": {
+			"id": "#result",
+			"type": "array",
+			"items": {
+				"type": "string"
+			},
+			"minItems": 0,
+			"maxItems": 0
 		}
+
 
 	}
 }
