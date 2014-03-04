@@ -1,5 +1,8 @@
-
-<div class="container bg_d bd_lead_d lead_d ng-cloak">
+<div class="container bg_d bd_lead_d lead_d ng-cloak" ng-show="error">
+	<h1 class="text-center"> Bollocks... <p>{{error.message}}</p></h1>
+	<p class="text-center">(get outta here)</p>
+</div>
+<div class="container bg_d bd_lead_d lead_d ng-cloak" ng-show="!error">
 	
 	<div class="row pad">
 

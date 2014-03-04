@@ -28,11 +28,16 @@ angular.module('clidb.services-controllers',[])
 	 */
 	var inited = false;
 
-	/*
-	 * parse a ' ' seperated string expression into an command name
-	 * and arguments
+	/**
+	 * parse a command string (async)
+	 * resolve parts within {} recursively
+	 * split by ' ' space char
+	 * first word is the command method id,
+	 * remaining words are the parameters, described by api.json
 	 */
 	service.eval = function(x, cb, qid) {
+
+		try {
 
 		var x = x,
 			aborted = false,
@@ -45,6 +50,7 @@ angular.module('clidb.services-controllers',[])
 			results = {};
 
 		if (replacers) for (var i = 0; i < replacers.length; i++) {
+
 			var key = '$REPLACE$' + i;
 			x = x.replace(replacers[i], key);
 		}
@@ -52,7 +58,7 @@ angular.module('clidb.services-controllers',[])
 		var parts = utils.splitWhiteSpaceOutsideQuotes(x),
 			cmd = parts.shift();
 
-		if (replacers) for (var i = 0; i < replacers.length; i++) {			
+		if (replacers) for (var i = 0; i < replacers.length; i++) {		
 			(function(y, key, index, parts, results, aborted) {
 				service.eval(y, function(err, result) {
 					inners[index] = undefined;
@@ -66,10 +72,15 @@ angular.module('clidb.services-controllers',[])
 			})(inners[i], key, i, parts, results, aborted);
 		}
 
+		} catch (e) {
+
+			cb(e, null);
+		}
+
 		function complete() {
 			if (aborted || completed) return;
 			for (var i in inners) if (inners[i]) return;
-			for (i =  0; i < parts.length; i++) {// in results) {
+			for (i =  0; i < parts.length; i++) {
 				var key = parts[i],
 					result = results[parts[i]];
 				if (result) {
@@ -94,14 +105,18 @@ angular.module('clidb.services-controllers',[])
 		return qid;
 	}
 
+	/**
+	 * execute the specified command
+	 * give the command an id if not provided
+	 */
 	service.exec = function(cmd, args, cb, qid) {
 		
 		if (!qid) qid = Date.now();
 
 		var str = [cmd].concat(args.slice(0, args.length)).join(' ');
 		
-		// index a generated callback - don't index commands with passed in callbacks
-
+		/* index a generated callback 
+		 * don't index commands with passed in callbacks, so we don't spam the console */
 		if (!cb) service.commands[qid] = {cmd: str, idx: qid};
 		callbacks[qid] = cb ? cb : service.callbacks[cmd];
 
@@ -116,6 +131,10 @@ angular.module('clidb.services-controllers',[])
 		return qid;
 	}
 
+	/**
+	 * when applying the command, make sure the api schema is satisfied
+	 * otherwise notify of the error
+	 */
 	function applyCommand(cmd, args, id, cb) {
 
 		var op = service.api[cmd],
@@ -177,27 +196,14 @@ angular.module('clidb.services-controllers',[])
 		else return '';	
 	}
 
-	// expose the create method
+	/*
+	 * expose the create method
+	 */
 	service.create = create;
 
-	// load local api schema to validate command strings
-	$http.get('schemas/api.json').then(function(result){
-		tv4.addSchema('api',result.data);
-		inited = true;
-	});
 
-
-	/**
-	 * an api can comprise of 4 parts :
-	 * 
-	 * 1) an entry in the api.json schema describing the parameters
-	 * 2) a call method within the aip object
-	 * 3) a callback method in the callbacks object
-	 * 4) a socekt listener for server responses, which will retrieve the index command object
-	 */
-
-	/**
-	 * api object
+	/*
+	 * the api methods
 	 */
 	service.api = {
 
@@ -245,7 +251,7 @@ angular.module('clidb.services-controllers',[])
 		edit : function(classkey, item, qid) {
 			var schema = tv4.getSchema(classkey);
 			if (!schema) return linkCallback('unable to find definition '+classkey, null, qid);
-			if (schema && tv4.validate(item, schema)) {
+			if (schema && tv4.validate(item, classkey)) {
 				editStore.schema = schema;
 				editStore.obj = item;
 				editStore.cb = function(err, result) {
@@ -268,8 +274,9 @@ angular.module('clidb.services-controllers',[])
 		}
 	}
 
-	/**
-	 * callbacks object
+	/*
+	 * respective callbacks for api methods 
+	 * (these are all very similar, but some are different)
 	 */
 	service.callbacks = {
 
@@ -277,6 +284,7 @@ angular.module('clidb.services-controllers',[])
 			try { service.commands[id].reply = angular.fromJson(result); } catch (e) {
 				service.commands[id].reply = result;
 			}
+			editStore.obj = result;
 			service.commands[id].err = err;
 		},
 
@@ -284,10 +292,12 @@ angular.module('clidb.services-controllers',[])
 			try { service.commands[id].reply = angular.fromJson(result); } catch (e) {
 				service.commands[id].reply = result;
 			}
+			editStore.obj = result;
 			service.commands[id].err = err;
 		},
 
 		dlt : function(err, result, id) {
+			editStore.obj = result;
 			service.commands[id].reply = result;
 			service.commands[id].err = err;
 		},
@@ -296,10 +306,12 @@ angular.module('clidb.services-controllers',[])
 			try { service.commands[id].reply = angular.fromJson(result); } catch (e) {
 				service.commands[id].reply = result;
 			}
+			editStore.obj = result;
 			service.commands[id].err = err;
 		},
 
 		new : function(err, result, id) {
+			editStore.obj = result;
 			service.commands[id].reply = result;
 			service.commands[id].err = err;
 		},
@@ -308,26 +320,31 @@ angular.module('clidb.services-controllers',[])
 			var reply = [],
 				list = utils.parseJSONArray(result);
 			for (var key in list) reply.push(key);
+			editStore.obj = result;
 			service.commands[id].reply = reply;
 			service.commands[id].err = err;
 		},
 
 		schema : function(err, result, id) {
-			service.commands[id].reply = result;//angular.fromJson(result);
+			editStore.obj = result;
+			service.commands[id].reply = result;
 			service.commands[id].err = err;
 		},
 
 		help : function(err, result, id) {
+			editStore.obj = result;
 			service.commands[id].reply = result;
 			service.commands[id].err = err;
 		},
 
 		edit : function(err, result, id) {
+			editStore.obj = result;
 			service.commands[id].reply = result;
 			service.commands[id].err = err;			
 		},
 
 		result : function(err, result, id) {
+			editStore.obj = result;
 			service.commands[id].reply = result;
 			service.commands[id].err = err;			
 		},
@@ -337,9 +354,9 @@ angular.module('clidb.services-controllers',[])
 
 
 	/*
-	 * socket listeners
+	 * socket listeners will link a query id (qid)
+	 * passed back from the server to get the right callback
 	 */
-
 	$rootScope.$on('socket.io.connected',function(){
 		//socketio.emit('clidb.getschema');
 		socketio.emit('clidb.getall');
@@ -403,6 +420,9 @@ angular.module('clidb.services-controllers',[])
 }])
 
 
+/*
+ * A service that allows us to pass an object between ui's for editing
+ */
 .factory('editStore', function() {
 
 	return {
@@ -415,7 +435,9 @@ angular.module('clidb.services-controllers',[])
 })
 
 
-
+/*
+ * the console allows us to type expressions directly
+ */
 .controller('clidb.ConsoleController',['$scope', 'db', function($scope, db) {
 
 	var idx = 0,
@@ -498,7 +520,13 @@ angular.module('clidb.services-controllers',[])
 
 		var valid = tv4.validate($scope.obj, $scope.schema);
 		//console.log('validation results ', $scope.obj, $scope.schema, tv4.error, valid);
-		$scope.items = parse($scope.schema, $scope.obj, 0);
+
+		try {
+			$scope.items = parse($scope.schema, $scope.obj, 0);
+		} catch (e) {
+			$scope.items = [];
+			$scope.error = e;
+		}
 
 	})();
 
@@ -640,7 +668,7 @@ angular.module('clidb.services-controllers',[])
 	}
 
 	$scope.loadRefs = function(item) {
-		db.eval('list '+item.ref, function(err, result) {
+		db.exec('list', [item.ref], function(err, result) {
 			item.refs = [];
 			for (var key in result) item.refs.push(key);
 		})
