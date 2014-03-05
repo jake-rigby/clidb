@@ -221,6 +221,7 @@ angular.module('clidb.services-controllers',[])
 		},
 
 		dlt : function(classkey, itemkey, qid) {
+			service.data[classkey][itemkey] = null; // <-- remove locally
 			socketio.emit('clidb.deleteitem', classkey, itemkey, qid);
 		},
 
