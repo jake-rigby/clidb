@@ -69,7 +69,7 @@ angular.module('clidb.services-controllers',[])
 					results[key] = result;
 					complete();
 				}, qid + i)
-			})(inners[i], key, i, parts, results, aborted);
+			})(inners[i], '$REPLACE$' + i, i, parts, results, aborted);
 		}
 
 		} catch (e) {
