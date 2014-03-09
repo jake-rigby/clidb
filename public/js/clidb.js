@@ -28,6 +28,57 @@ angular.module('clidb.services-controllers',[])
 	 */
 	var inited = false;
 
+	
+	service.resolveToString = function(x, cb) {
+
+		try {
+
+		var x = x,
+			aborted = false,
+			completed = false;
+
+		var inners = extractSectionsinCurlys(x),
+			outers = extractSectionsinCurlys(x, true);
+
+		if (outers) {
+
+			var replace = {};
+
+			for (var i = 0; i < outers.length; i++) {
+				replace[inners[i]] = outers[i];
+			}
+
+			for (var r in replace) {		
+				(function(inner, outer) {
+					service.eval(inner, function(err, result) {
+						if (err) {
+							if (cb) cb(err, null);
+							return abort();
+						}
+						x = x.replace(new RegExp(inner, "g"), result);
+						delete replace[inner];
+						for (var j in replace) return;
+						cb(null, x);
+					}, ++QID); // <-- ensure we don't use same id
+				})(r, replace[r]);
+			}
+		}
+
+		else cb(null, x);
+
+		} catch (e) {
+
+			cb(e, null);
+			return abort();
+		}
+
+		function abort() {
+			var aborted = true;
+		}
+		
+	}
+
+
 	/**
 	 * parse a command string (async)
 	 * resolve parts within {} recursively
