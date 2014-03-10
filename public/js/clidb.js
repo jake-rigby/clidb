@@ -228,8 +228,7 @@ angular.module('clidb.services-controllers',[])
  	function create(s) {
 
  		if (!s) return null
- 		else if (s.type=='array') return [create(s.items)];
- 		else if (s.type=='array') return [];
+ 		else if (s.type=='array') return [];//return [create(s.items)];
 		else if (s.type=='object'){
 			var r = {};
 			for (var p in s.properties){
@@ -237,14 +236,14 @@ angular.module('clidb.services-controllers',[])
 				if (s.properties[p].type=='object') r[p] = create(s.properties[p]);
 				else if (s.properties[p].type=='number') r[p] = 0;
 				else if (s.properties[p].type=='array') r[p] = create(s.properties[p]);
-				else if (s.properties[p].type=='string') r[p]='';
+				else if (s.properties[p].type=='string') r[p]= '-';
 				else if (s.properties[p].$ref && tv4.getSchema(s.properties[p].$ref)) r[p] = create(tv4.getSchema(s.properties[p].$ref));
-				else r[p] = null;
+				else r[p] = 'unknown : '+p;
 				//else if schemas[s.properties[p].type] r[p] = create(schemas[s.properties[p].type]); // <-- search referenced schemas here
 			}
 			return r
 		} 
-		else return '';	
+		else return '--';	
 	}
 
 	/*
