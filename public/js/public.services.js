@@ -26,13 +26,18 @@ angular.module('public.services',[])
 		$rootScope.$broadcast('userUpdated',null);
 		console.log('logout');
 		$location.path(servicesRoot);
-		// TODO - remove authentication frmo the session/ force a new one
+		// TODO - remove authentication from the session/ force a new one
 	}
 
 	service.reset = function(){
 		socketio.emit('useradmin.reset');
-		window.location.reload();
 	}
+
+	socketio.on('useradmin.reset', function() {
+
+		// server has confirmed reset - reload
+		window.location.reload();
+	})
 
 	return service;
 }])
