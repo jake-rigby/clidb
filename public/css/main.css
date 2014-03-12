@@ -161,6 +161,32 @@ hr {
 }
 
 
+.sms_bg_1 {
+  background-color: #4d4d4d;
+}
+
+.sms_txt_1 {
+  color: #e5e5e5; 
+}
+
+.sms_sub_1 {
+  color: #000000;
+}
+
+
+.sms_bg_2 {
+  background-color: #bbbbbb;
+}
+
+.sms_txt_2 {
+  color: #706e6e; 
+}
+
+.sms_sub_2 {
+  color: #ffffff;
+}
+
+
 .splash {
   display: block;
   width: 100%;
