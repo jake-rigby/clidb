@@ -30,6 +30,7 @@ angular.module('public.services',[])
 	}
 
 	service.reset = function(){
+		
 		socketio.emit('useradmin.reset');
 	}
 
@@ -37,7 +38,22 @@ angular.module('public.services',[])
 
 		// server has confirmed reset - reload
 		window.location.reload();
-	})
+	});
+
+	/**
+	 * export function should be part of the clidb remote client
+	 */
+
+	service.export = function(classkey) {
+		
+		socketio.emit('clidb.export', classkey);
+	}
+
+	socketio.on('clidb.export', function() {
+
+		// server confirms export
+		console.log('exported');
+	});
 
 	return service;
 }])

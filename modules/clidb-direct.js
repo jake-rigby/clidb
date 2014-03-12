@@ -4,8 +4,18 @@
  * A direct api to the clidb module
  */
 
+
 // deps
 var tv4 = require('tv4');
+var fs = require('fs');
+
+function parseJSONArray(source) {
+	
+	var result = {};
+	for (var key in source) result[key] = JSON.parse(source[key]);
+	return result;
+}
+
 
 // api
 module.exports.connect = function(namespace, redis) {
@@ -73,12 +83,31 @@ module.exports.connect = function(namespace, redis) {
 			redis.smembers(namespace+':clidb:classes',cb);
 		},
 		
-		deleteitem : function(classkey,itemkey,cb){
+		deleteitem : function(classkey,itemkey,cb) {
 			redis.hlen(namespace+':clidb:'+classkey, function(err, len){
 				//if (len < 2) return; // <-- NEED TO DELETE THE CLASS NAME FROM THE CLASS SET
 				redis.hdel(namespace+':clidb:'+classkey, itemkey, cb); 
 				// redis.hgetall(namespace+':clidb:'+classkey, cb); // <-- this updates the remote cache (clidb.class.. is a TODO)
 			});
+		},
+
+		export : function(classkey, path, cb) {
+			redis.hgetall(namespace+':clidb:'+classkey, function(err, result) {
+				if (!err) {
+					console.log(result);
+					fs.writeFile(path, JSON.stringify(parseJSONArray(result), undefined, 4), function(err) {
+						if (cb) cb(err, err ? false : true);
+					}) 
+				} else if (cb) {
+					cb(err);
+				}
+			});
+		},
+
+		import : function(classkey, path, cb) {
+			fs.readFile(path, 'utf8', function(err, result) {
+				console.log('[CLIDB-DIRECT] import', result);
+			})
 		}
 	}	
 }
