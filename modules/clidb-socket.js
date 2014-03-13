@@ -56,7 +56,7 @@ module.exports.connect = function(namespace, redis, socket) {
 	});
 
 	socket.on('clidb.export', function(classkey, qid) {;
-		cli.export(classkey, classkey+'_exp.json', function(err, result) {
+		cli.export(classkey, '../exports/'+classkey+'.json', function(err, result) {
 			socket.emit('clidb.export', err, classkey)
 			if (err) console.log(err);
 		})
