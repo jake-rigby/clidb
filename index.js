@@ -1,5 +1,5 @@
-module.exports.build = require('./modules/clidb-builder');
-module.exports.socket = require('./modules/clidb-socket');
-module.exports.client = require('./modules/clidb-direct');
-module.exports.eval = require('./modules/clidb-evaluator');
-module.exports.provideContent = require('./modules/content-provider');
+module.exports.build = require('./modules/buildSchemas');
+module.exports.socket = require('./modules/socketInterface');
+module.exports.client = require('./modules/directInterface');
+module.exports.eval = require('./modules/expressionEvaluator');
+module.exports.provideContent = require('./modules/resourceLocation');
