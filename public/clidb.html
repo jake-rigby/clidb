@@ -28,21 +28,17 @@
 			</div>
 		</div>
 
-		<!-- load these in this order for dropdown to work -->
 		<script type="text/javascript" src="lib/jq.js"></script> 
-		<!--
-		<script type="text/javascript" src="lib/require.js"></script>
-		-->
 		<script type="text/javascript" src="lib/bootstrap/js/bootstrap.js"></script>
 		
 		<script type="text/javascript" src="lib/angular-1.2.0-rc.2/angular-route.js"></script>
 		<script type="text/javascript" src="lib/socket.io.js"></script>
 		<script type="text/javascript" src="lib/tv4/tv4.js"></script>
 
-		<script type="text/javascript" src="js/public.services.js"></script>
-		<script type="text/javascript" src="js/public.controllers.js"></script>		
-		<script type="text/javascript" src="js/public.filters.js"></script>
-		<!--script type="text/javascript" src="js/utils.js"></script-->
+		<!-- this app requires the microbe middleware to be present on the server, and the static content it contains to be provided -->
+		<script type="text/javascript" src="js/microbe.services.js"></script>
+		<script type="text/javascript" src="js/microbe.controllers.js"></script>		
+		<script type="text/javascript" src="js/microbe.filters.js"></script>
 
 		<script type="text/javascript" src="js/clidb.js"></script>
 
@@ -52,9 +48,9 @@
 
 			angular.module('clidb',[
 				'ngRoute',
-				'public.services',
-				'public.controllers',
-				'public.filters',
+				'microbe.services',
+				'microbe.controllers',
+				'microbe.filters',
 				'clidb.services-controllers'
 			])
 
