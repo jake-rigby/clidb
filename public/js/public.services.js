@@ -26,6 +26,7 @@ angular.module('public.services',[])
 		$rootScope.$broadcast('userUpdated',null);
 		console.log('logout');
 		$location.path(servicesRoot);
+		$http({method: 'GET', url: servicesRoot+'/logout'})
 		// TODO - remove authentication from the session/ force a new one
 	}
 

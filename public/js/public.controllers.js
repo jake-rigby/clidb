@@ -18,7 +18,7 @@ angular.module('public.controllers',[])
 	}
 
 	$scope.exportClass = function(classkey) {
-		console.log('expoert', classkey);
+		console.log('export', classkey);
 		UserService.export(classkey);
 	}
 }])

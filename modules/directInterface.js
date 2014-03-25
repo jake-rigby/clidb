@@ -108,6 +108,37 @@ module.exports.connect = function(namespace, redis) {
 			fs.readFile(path, 'utf8', function(err, result) {
 				console.log('[CLIDB-DIRECT] import', result);
 			})
+		},
+
+		new : function(classkey, cb) {
+			var schm = tv4.getSchema(classkey);
+			if (!schm) return cb('unable to find definition '+classkey, null);
+			var instance = create(schm);
+			if (!instance) return cb('error generating new  '+classkey, null);
+			cb(null, instance);
 		}
-	}	
+
+	}
+
+ 	function create(s) {
+
+ 		if (!s) return null
+ 		else if (s.type=='array') return [];//return [create(s.items)];
+		else if (s.type=='object'){
+			var r = {};
+			for (var p in s.properties){
+				
+				if (s.properties[p].type=='object') r[p] = create(s.properties[p]);
+				else if (s.properties[p].type=='number') r[p] = 0;
+				else if (s.properties[p].type=='array') r[p] = create(s.properties[p]);
+				else if (s.properties[p].type=='string') r[p]= '-';
+				else if (s.properties[p].$ref && tv4.getSchema(s.properties[p].$ref)) r[p] = create(tv4.getSchema(s.properties[p].$ref));
+				else r[p] = 'unknown : '+p;
+				//else if schemas[s.properties[p].type] r[p] = create(schemas[s.properties[p].type]); // <-- search referenced schemas here
+			}
+			return r
+		} 
+		else return '--';	
+	}
+
 }
