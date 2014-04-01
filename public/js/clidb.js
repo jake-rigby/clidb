@@ -1,6 +1,6 @@
 'use-strict';
 
-angular.module('clidb.services-controllers',[])
+angular.module('clidb',[])
 
 .factory('db', ['$rootScope', 'socket.io', '$http', '$location', 'editStore', 'utils',
 	function($rootScope, socketio, $http, $location, editStore, utils) {
@@ -464,6 +464,21 @@ angular.module('clidb.services-controllers',[])
 		$rootScope.$apply(function(){
 			if (qid) linkCallback(err, data, qid);
 		}, true);
+	});
+
+
+	/**
+	 * export function - tell teh server to write the specified file to disk
+	 */
+	service.export = function(classkey) {
+		
+		socketio.emit('clidb.export', classkey);
+	}
+
+	socketio.on('clidb.export', function() {
+
+		// server confirms export
+		console.log('exported');
 	});
 
 	return service;
