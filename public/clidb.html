@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html ng-app="clidb">
+<html ng-app="clidb.consoleApp">
 	<head>
 
 		<meta charset="utf-8" />
@@ -46,12 +46,12 @@
 
 		servicesRoot = '';
 
-			angular.module('clidb',[
+			angular.module('clidb.consoleApp',[
 				'ngRoute',
 				'microbe.services',
 				'microbe.controllers',
 				'microbe.filters',
-				'clidb.services-controllers'
+				'clidb'
 			])
 
 			.config(['$routeProvider',function($routeProvider){
