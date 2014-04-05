@@ -33,6 +33,14 @@ module.exports.connect = function(namespace, redis, socket) {
 		});
 	});
 
+	socket.on('clidb.getitemprop',function(classkey, itemkey, path, qid) {
+		cli.getitemprop(classkey, itemkey, path, function(err, result) {
+			socket.emit('clidb.getitemprop', err, result, qid);
+			if (err) console.log(err);		
+		});
+	});
+
+
 	socket.on('clidb.setitem', function(classkey, itemkey, item, qid) {
 		cli.setitem(classkey, itemkey, item, function(err, result) {
 			socket.emit('clidb.setitem', err, classkey, itemkey, item, qid);
@@ -58,9 +66,9 @@ module.exports.connect = function(namespace, redis, socket) {
 	/**
 	 * Exports are saved to disk in the child /exports of the parent folder
 	 */
-	socket.on('clidb.export', function(classkey, qid) {;
+	socket.on('clidb.export', function(classkey, qid) {
 		cli.export(classkey, '../exports/'+classkey+'.json', function(err, result) {
-			socket.emit('clidb.export', err, classkey)
+			socket.emit('clidb.export', err, classkey, !err, qid);
 			if (err) console.log(err);
 		})
 	});

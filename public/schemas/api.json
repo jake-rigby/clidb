@@ -26,6 +26,18 @@
 			"maxItems": 2
 		},
 
+		"getp": {
+			"id": "#getp",
+			"type": "array",
+			"items": [
+				{"type": "string"},
+				{"type": "string"},
+				{"type": "string"}
+			],
+			"minItems": 3,
+			"maxItems": 3
+		},
+
 		"set": {
 			"id": "#set",
 			"type": "array",
@@ -108,8 +120,16 @@
 			},
 			"minItems": 0,
 			"maxItems": 0
+		},
+
+		"export": {
+			"id": "#export",
+			"type": "array",
+			"items": [
+				{"type": "string"}
+			],
+			"minItems": 1,
+			"maxItems": 1
 		}
-
-
 	}
 }

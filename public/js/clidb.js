@@ -37,8 +37,8 @@ angular.module('clidb',[])
 			aborted = false,
 			completed = false;
 
-		var inners = extractSectionsinCurlys(x),
-			outers = extractSectionsinCurlys(x, true);
+		var inners = utils.extractSectionsinCurlys(x),
+			outers = utils.extractSectionsinCurlys(x, true);
 
 		if (outers) {
 
@@ -270,6 +270,10 @@ angular.module('clidb',[])
 			socketio.emit('clidb.getitem', classkey, itemkey, qid);
 		},
 
+		getp : function(classkey, itemkey, path, qid) {
+			socketio.emit('clidb.getitemprop', classkey, itemkey, path, qid);
+		},
+
 		dlt : function(classkey, itemkey, qid) {
 			service.data[classkey][itemkey] = null; // <-- remove locally
 			socketio.emit('clidb.deleteitem', classkey, itemkey, qid);
@@ -322,6 +326,10 @@ angular.module('clidb',[])
 
 		result : function(qid) {
 			linkCallback(null, editStore.obj, qid);
+		},
+
+		export : function(classkey, qid) {
+			socketio.emit('clidb.export', classkey, qid);
 		}
 	}
 
@@ -331,7 +339,7 @@ angular.module('clidb',[])
 	 */
 	service.callbacks = {
 
-		getc :  function(err, result, id) {
+		getc : function(err, result, id) {
 			try { service.commands[id].reply = angular.fromJson(result); } catch (e) {
 				service.commands[id].reply = result;
 			}
@@ -339,11 +347,17 @@ angular.module('clidb',[])
 			service.commands[id].err = err;
 		},
 
-		get :  function(err, result, id) {
+		get : function(err, result, id) {
 			try { service.commands[id].reply = angular.fromJson(result); } catch (e) {
 				service.commands[id].reply = result;
 			}
 			editStore.obj = result;
+			service.commands[id].err = err;
+		},
+
+		getp : function(err, result, id) {
+			editStore.obj = result;
+			service.commands[id].reply = result;
 			service.commands[id].err = err;
 		},
 
@@ -400,7 +414,10 @@ angular.module('clidb',[])
 			service.commands[id].err = err;			
 		},
 
-
+		commit : function(err, result, id) {
+			service.commands[id].reply = result;
+			service.commands[id].err = err;						
+		}
 	}
 
 
@@ -451,6 +468,12 @@ angular.module('clidb',[])
 		}, true);
 	});
 
+	socketio.on('clidb.getitemprop', function(err, result, qid) {
+		$rootScope.$apply(function() {
+			if (qid) linkCallback(err, result, qid);
+		})
+	})
+
 
 	socketio.on('clidb.setitem', function(err, classkey, itemkey, item, qid){
 		$rootScope.$apply(function(){
@@ -465,6 +488,14 @@ angular.module('clidb',[])
 			if (qid) linkCallback(err, data, qid);
 		}, true);
 	});
+
+	socketio.on('clidb.export', function(err, classkey, result, qid){
+		$rootScope.$apply(function(){
+			if (qid) linkCallback(err, classkey, result, qid);
+		}, true);
+	});
+
+
 
 
 	/**

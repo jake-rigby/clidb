@@ -55,6 +55,18 @@ module.exports.connect = function(namespace, redis) {
 			});
 		},
 
+		getitemprop : function(classkey, itemkey, path, cb) {
+			redis.hget(namespace+':clidb:'+classkey,itemkey,function(err,item){
+				item = JSON.parse(item);
+				if (err) cb(err, null);
+				var loc = path.split('.'),
+					p = item;
+				while(loc.length && p) p = item[loc.shift()];
+				cb(p ? err : 'no value', p); // <-- redis doesn't generate errors for null queries
+			});
+
+		},
+
 		/*
 		 * store @param value in the database
 		 * if the class identifies a recognised schema, validate the value by that
