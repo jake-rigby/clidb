@@ -83,7 +83,6 @@ module.exports.connect = function(namespace, redis) {
 				});
 			} else {
 				cb(tv4.error ? tv4.error : 'schema '+classkey+' not found', false);
-				console.log(item, schema);
 			}
 		},
 

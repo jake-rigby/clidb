@@ -14,7 +14,7 @@ module.exports = function(namespace, redis, schemas, cb) {
 		var id = obj.id.substring(1);
 		//m.hset(namespace+':clidb:schema', id, JSON.stringify(obj));
 		tv4.addSchema(obj);
-		console.log('clidb [BUILDER] add schema --> ',id);
+		console.log('[CLIDB BUILDER] add schema --> ',id);
 		//console.log(obj.definitions.episode ? obj.definitions.episode.properties.actions : obj);
 	}
 	m.exec(function(err,replies) {
