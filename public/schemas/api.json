@@ -81,6 +81,16 @@
 			"maxItems": 1
 		},
 
+		"getclass": {
+			"id": "#getclass",
+			"type": "array",
+			"items": [
+				{"type": "string"}
+			],
+			"minItems": 1,
+			"maxItems": 1
+		},
+
 		"schema": {
 			"id": "#schema",
 			"type": "array",

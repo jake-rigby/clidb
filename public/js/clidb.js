@@ -297,6 +297,10 @@ angular.module('clidb',[])
 			socketio.emit('clidb.getclass', classkey, qid);
 		},
 
+		getclass : function(classkey, qid) {
+			socketio.emit('clidb.getclass', classkey, qid);
+		},
+
 		schema : function(schemaName, qid) {
 			var schema = tv4.getSchema(schemaName);
 			if (!schema) socketio.emit('clidb.getschema', schemaName, qid);
@@ -382,6 +386,15 @@ angular.module('clidb',[])
 		},
 
 		list : function(err, result, id) {
+			var reply = [],
+				list = utils.parseJSONArray(result);
+			for (var key in list) reply.push(key);
+			editStore.obj = result;
+			service.commands[id].reply = reply;
+			service.commands[id].err = err;
+		},
+
+		getclass : function(err, result, id) {
 			var reply = [],
 				list = utils.parseJSONArray(result);
 			for (var key in list) reply.push(key);
