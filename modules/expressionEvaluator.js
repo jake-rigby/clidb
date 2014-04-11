@@ -194,6 +194,8 @@ module.exports = function(db) {
 		var op = service.api[cmd],
 			schm = tv4.getSchema('#'+cmd);
 
+		//console.log('expressionEvaluator applycmd', cmd, op, args);
+
 		if (op && schm && tv4.validate(args, schm)) { // <-- won't validate zero alength arrays
 			
 			args.push(id); // <-- ??
@@ -201,8 +203,8 @@ module.exports = function(db) {
 		
 		} else {
 		
-			var err = schm ?
-				tv4.error.message : 'unknown command : '+ cmd;
+			var err = schm && tv4.error ?
+				 tv4.error.message : 'unknown command : '+ cmd;
 			linkCallback(err, null, id);
 		}
 
@@ -300,7 +302,7 @@ module.exports = function(db) {
 			linkCallback(null, instance, qid);
 		},
 
-		list : function(classkey, qid) {
+		getclass : function(classkey, qid) {
 			db.getclass(classkey, function(err, result) {
 				linkCallback(err, result, qid);
 			});
