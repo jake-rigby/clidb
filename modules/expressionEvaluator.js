@@ -457,6 +457,7 @@ var qidcntr = 0;
 function getuid() {
 
 	if (qidcntr > 1000000000) qidcntr = 0;
+	return qidcntr++;
 }
 
 
