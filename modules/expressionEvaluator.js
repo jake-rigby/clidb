@@ -103,7 +103,7 @@ module.exports = function(db) {
 			aborted = false,
 			completed = false;
 
-		if (!qid) qid = Date.now();
+		if (!qid) qid = getuid();
 
 		var inners = extractSectionsinCurlys(x),
 			replacers = extractSectionsinCurlys(x, true),
@@ -119,17 +119,17 @@ module.exports = function(db) {
 			cmd = parts.shift();
 
 		if (replacers) for (var i = 0; i < replacers.length; i++) {		
-			(function(y, key, index, parts, results, aborted) {
+			(function(y, key, index, results, callback) {
 				service.eval(y, function(err, result) {
 					inners[index] = undefined;
 					if (err) {
-						if (cb) cb(err, null);
+						if (callback) callback(err, null);
 						return abort();
 					}
 					results[key] = result;
 					complete();
-				}, qid + i)
-			})(inners[i], '$REPLACE$' + i, i, parts, results, aborted);
+				}, getuid())
+			})(inners[i], '$REPLACE$' + i, i, results, cb);
 		}
 
 		} catch (e) {
@@ -171,7 +171,7 @@ module.exports = function(db) {
 	 */
 	service.exec = function(cmd, args, cb, qid) {
 		
-		if (!qid) qid = Date.now();
+		if (!qid) qid = getuid();
 
 		var str = [cmd].concat(args.slice(0, args.length)).join(' ');
 		
@@ -441,14 +441,6 @@ function extractSectionsinCurlys(x, keepCurlys) {
 	else return x.match(/[^{}]+(?=\})/g);
 }
 
-function getUid() {
-
-	var n = Date.now();
-	if (this.last != n) {
-		this.last
-		return n.toString()+'.0'
-	} 
-}
 
 function addSchema(schema) {
 	
@@ -458,4 +450,13 @@ function addSchema(schema) {
 	}
 	if (qid) linkCallback(err, schema, qid);
 }
+
+
+var qidcntr = 0;
+
+function getuid() {
+
+	if (qidcntr > 1000000000) qidcntr = 0;
+}
+
 
