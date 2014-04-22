@@ -170,6 +170,8 @@ module.exports = function(db) {
 	 * give the command an id if not provided
 	 */
 	service.exec = function(cmd, args, cb, qid) {
+
+		//console.log('[expressionEvaluator] executing', cmd, args, 'a callback', qid);
 		
 		if (!qid) qid = getuid();
 
@@ -194,7 +196,7 @@ module.exports = function(db) {
 		var op = service.api[cmd],
 			schm = tv4.getSchema('#'+cmd);
 
-		//console.log('expressionEvaluator applycmd', cmd, op, args);
+		//console.log('expressionEvaluator applycmd', cmd, Boolean(op), schm, args);
 
 		if (op && schm && tv4.validate(args, schm)) { // <-- won't validate zero alength arrays
 			
@@ -269,8 +271,9 @@ module.exports = function(db) {
 			});
 		},
 
-		getprop : function(classkey, itemkey, addr, qid) {
+		getp : function(classkey, itemkey, addr, qid) {
 			db.getitem(classkey, itemkey, function(err, item) {
+				console.log('[expressionEvaluator] getp', item);
 				try { var result = JSON.parse(item); } catch (e) {
 					result = item;
 				}
@@ -332,7 +335,7 @@ module.exports = function(db) {
 			service.commands[id].err = err;
 		},
 
-		getprop : function(err, result, id) {
+		getp : function(err, result, id) {
 			editStore.obj = result;
 			service.commands[id].reply = result;
 			service.commands[id].err = err;
