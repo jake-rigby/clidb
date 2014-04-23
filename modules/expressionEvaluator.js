@@ -65,7 +65,7 @@ module.exports = function(db) {
 							if (cb) cb(err, null);
 							return abort();
 						}
-						x = x.replace(new RegExp(inner, "g"), result);
+						x = x.replace(new RegExp(outer, "g"), result);
 						delete replace[inner];
 						for (var j in replace) return;
 						cb(null, x);
