@@ -95,6 +95,7 @@ angular.module('clidb',[])
 			completed = false;
 
 		if (!qid) qid = Date.now();
+		// service.commands[qid] = {cmd: str, idx: qid};
 
 		var inners = utils.extractSectionsinCurlys(x),
 			replacers = utils.extractSectionsinCurlys(x, true),
@@ -226,9 +227,14 @@ angular.module('clidb',[])
 	 * create a minimal instance described by a schema
 	 */
  	function create(s) {
-
+ 		
  		if (!s) return null
- 		else if (s.type=='array') return [];//return [create(s.items)];
+ 		if (s.$ref) {
+ 			var ref = tv4.getSchema(s.$ref);
+ 			if (!ref) return null;
+ 			else s = ref; 
+ 		}
+ 		if (s.type=='array') return [];//return [create(s.items)];
 		else if (s.type=='object'){
 			var r = {};
 			for (var p in s.properties){
@@ -286,7 +292,7 @@ angular.module('clidb',[])
 		},
 
 		new : function(classkey, qid) {
-			var schm = tv4.getSchema(classkey);
+			var schm = tv4.getSchema('#'+classkey);
 			if (!schm) return linkCallback('unable to find definition '+classkey, null, qid);
 			var instance = create(schm);
 			if (!instance) return linkCallback('error generating new  '+classkey, null, qid);
@@ -308,7 +314,7 @@ angular.module('clidb',[])
 		},
 
 		edit : function(classkey, item, qid) {
-			var schema = tv4.getSchema(classkey);
+			var schema = tv4.getSchema('#'+classkey);
 			if (!schema) return linkCallback('unable to find definition '+classkey, null, qid);
 			if (schema && tv4.validate(item, classkey)) {
 				editStore.schema = schema;
@@ -449,9 +455,10 @@ angular.module('clidb',[])
 			return console.log(err);
 		}
 		tv4.addSchema(id, schema);
+		/*
 		for (var def in schema.definitions) {
 			tv4.addSchema(def,schema.definitions[def]);
-		}
+		}*/
 		if (qid) linkCallback(err, schema, qid);
 	});
 	
@@ -623,20 +630,23 @@ angular.module('clidb',[])
 				o = $scope.root;
 			while(p.length && o) o = o[p.shift()];
 			if (o) $scope.obj = o;
-			else throw new error('invalid object path');
+			else throw 'invalid object path';
 		}
 
-		else $scope.obj = $scope.root;
+		else {
+			$scope.obj = $scope.root;
+			$scope.path = [];
+		}
 
 		var valid = tv4.validate($scope.obj, $scope.schema);
 		//console.log('validation results ', $scope.obj, $scope.schema, tv4.error, valid);
 
-		try {
-			$scope.items = parse($scope.schema, $scope.obj, 0);
-		} catch (e) {
-			$scope.items = [];
-			$scope.error = e;
-		}
+		//try {
+			$scope.items = parse($scope.schema, $scope.obj, 0, $scope.path);
+		//} catch (e) {
+		//	$scope.items = [];
+		//	$scope.error = e;
+		//}
 
 	})();
 
@@ -648,15 +658,27 @@ angular.module('clidb',[])
 		
 		var result = [], type, items, item, ref, ppath;
 
+		if (node.$ref) node = tv4.getSchema(node.$ref); // <-- TODO catch errors
+
 		if (node.properties) {
 
 			for (var p in node.properties) {
 
-				type = node.properties[p].type;
-				ref = node.properties[p].ref;
-				items = node.properties[p].items;
+				var prop = node.properties[p];
+				if (prop.$ref) prop = tv4.getschema(prop.$ref); // <-- TODO catch errors
 
-				// items of type reference
+				type = prop.type;
+				ref = prop.ref;
+				items = prop.items;
+
+				if (items && items.$ref) items = tv4.getSchema(items.$ref); // <-- TODO catch errors
+
+				/* 
+				 * items of type reference
+				 * use 'ref' as opposed to '$ref' in a schema to
+				 * indicate this is a key reference to a hash (so we can present a drop down of members)
+				 * rather than a $ref to nest an external schema
+				 */
 				if (ref) {
 
 					item = {
@@ -693,26 +715,32 @@ angular.module('clidb',[])
 				}
 
 				// list items
-				else if (type == 'array') {
+				else if (type == 'array' || type == 'object') {
 
 					if (!items) {
 						items = {type: 'string'};
 					}
 
-					// for objects we launch a new form, but we have to call back to this one
-					if (items.type == 'object') {
+					if (items.$ref) {
+
+					}
+
+					// for objects we launch a new form, but  we have to call back to this one
+					if (items.type == 'object') {						
 
 						for (var v in data[p]) {
 
+							if (Array.isArray(data[p])) v = Number(v);
+
 							item = {
 								title: p,
-								index: Number(v),
+								index: v,
 								type: 'object',
 								value: JSON.stringify(data[p][v], undefined, 2),
 								depth: depth,
 								id: idx++,
 								schema: node.properties[p].items,
-								path: path.concat([p,Number(v)])
+								path: path.concat([p,v])
 							}
 
 							result.push(item);
@@ -723,31 +751,32 @@ angular.module('clidb',[])
 			
 						item = {
 							title: p,
-							index: Number(v), 
+							index: v, 
 							type: items.type,
 							value: data[p][v], 
 							depth: depth,
 							id: idx++,
-							path: path.concat([p,Number(v)])
+							path: path.concat([p,v])
 						};
 
 						result.push(item);
 					}
 
 					// a stub to add a new list item
-					result.push({
+					item = {
 						title: p,
 						index: data[p].length,
 						id: idx++,
 						template: db.create(items),
-						newItemStub: true,
+						newItemStubParentType: type,
 						depth: depth,
 						path: path.concat([p])
-					})
+					}
+					result.push(item);
 				}
 
 				else {
-					// type is object
+					// unimplemented type
 					console.log('To complete');
 				}
 			}
@@ -763,8 +792,7 @@ angular.module('clidb',[])
 			key: $scope.key, 
 			schema: JSON.stringify(schema), 
 			schemaName: $scope.schemaName, 
-			path: path,
-			template: $scope.root } );
+			path: angular.copy(path) } );
 	}
 
 	$scope.save = function() {
@@ -788,22 +816,27 @@ angular.module('clidb',[])
 		$scope.obj[item.title] = ref;
 	}
 
-	$scope.augmentList = function(path, template) {
-		var loc = $scope.obj;
-		while (path.length && loc) {
-			loc = loc[path.shift()];
+	$scope.augmentList = function(path, template, key) {
+		var loc = $scope.root,
+			pcpy = angular.copy(path);
+		while (pcpy.length && loc) {
+			loc = loc[pcpy.shift()];
 		}
-		loc.push(template);
-		$scope.items = parse($scope.schema, $scope.obj, 0);
+		if (Array.isArray(loc)) loc.push(template);
+		else if (key) loc[key] = template;
+		path = angular.copy(path);
+		path.pop();
+		$scope.items = parse($scope.schema, $scope.obj, 0, path);
 	}
 
 	$scope.removeListItem = function(item) {
-		var loc = $scope.obj;
-		while (item.path.length > 1 && loc) {
-			loc = loc[item.path.shift()];
+		var loc = $scope.obj,
+			path = angula.copy(item.path);
+		while (path.length > 1 && loc) {
+			loc = loc[path.shift()];
 		}
 		if (loc){
-			loc[item.path.shift()] = null;
+			loc[path.shift()] = null;
 			compressList(loc);
 		}
 		$scope.items = parse($scope.schema, $scope.obj, 0);
@@ -826,6 +859,12 @@ angular.module('clidb',[])
 			this.$apply(fn);
 		}
 	};
+
+	function getSchemaFromPath(path) {
+
+		var schm = $scope.schema;
+
+	}
 
 
 }])
@@ -885,4 +924,18 @@ angular.module('clidb',[])
 		} 
 	}
 	}
+})
+
+.directive('ngEnter', function() {
+    return function(scope, element, attrs) {
+        element.bind("keydown keypress", function(event) {
+            if(event.which === 13) {
+                scope.$apply(function(){
+                    scope.$eval(attrs.ngEnter, {'event': event});
+                });
+
+                event.preventDefault();
+            }
+        });
+    };
 })

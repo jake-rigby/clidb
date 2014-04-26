@@ -61,7 +61,7 @@ module.exports.connect = function(namespace, redis) {
 				if (err) cb(err, null);
 				var loc = path.split('.'),
 					p = item;
-				while(loc.length && p) p = item[loc.shift()];
+				while(loc.length && p) {p = p[loc.shift()];}
 				cb(p ? err : 'no value', p); // <-- redis doesn't generate errors for null queries
 			});
 
