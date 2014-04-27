@@ -2,7 +2,7 @@
 	<h1 class="text-center"> Bollocks... <p>{{error.message}}</p></h1>
 	<p class="text-center">(get outta here)</p>
 </div>
-<div class="container bg_d bd_lead_d lead_d ng-cloak" ng-show="!error">
+<div class="container bg_d bd_lead_d lead_d ng-cloak padbottom" ng-show="!error">
 	
 	<div class="row pad">
 
@@ -78,9 +78,7 @@
 					
 					<!-- object editor -->
 					<div class="col-sm-9 " ng-show="item.type=='object'">
-						<pre class="">{{item.value}}
-							<a ng-click="editChild(item.schema, item.path)"><icon class="pull-right icon-edit"></icon></a>
-						</pre>
+						<pre ng-click="editChild(item.schema, item.path)" class="">{{item.value}}</pre>
 					</div>
 					
 					<!-- array string element editor -->
@@ -105,7 +103,7 @@
 
 					<div class="col-sm-9">
 						<button ng-show="item.newItemStubParentType == 'array'" id="item.id+'_'" class="form-control text-left" ng-click="augmentList(item.path, item.template, dictKey)"><icon class="icon-plus text-primary"></icon></button>
-						<input ng-show="item.newItemStubParentType == 'object'" placeholder="create {{item.title}}" type="text" class="form-control" ng-model="dictKey" ng-enter="augmentList(item.path, item.template, dictKey)" />
+						<input ng-show="item.newItemStubParentType == 'object'" placeholder="create {{item.title}} by typing a new key" type="text" class="form-control" ng-model="dictKey" ng-enter="augmentList(item.path, item.template, dictKey)" />
 					</div>					
 
 				</div>
