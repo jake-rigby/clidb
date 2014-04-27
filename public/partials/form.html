@@ -23,7 +23,6 @@
 			Schema
 			<pre class="bg_d lead_d bd_bg_d">{{schema | pp}}</pre>
 		</div>
-		-->
 
 		<div class="col-sm-3">
 			<div class="pad">
@@ -31,15 +30,14 @@
 				<pre class="bg_d lead_d bd_bg_d">{{obj | pp}}</pre>
 			</div>
 		</div>
+		-->
 
-		<ul class="col-sm-9">
+		<ul class="col-sm-12">
 				
 			<li>
 			</li>
 
 			<li ng-repeat="item in items">
-
-				{{item.path}}
 
 				<!-- referenced fields -->
 				<div ng-show="item.ref" class="form-group">
@@ -100,7 +98,6 @@
 
 				<!-- stub for new list item -->
 				<div ng-show="item.newItemStubParentType" class="form-group">
-
 					<!-- field label -->
 					<label for="item.id+'_'" class="col-sm-2 control-label">
 						<span class="text-muted">{{item.title}} {{item.index}} </span>
@@ -108,7 +105,7 @@
 
 					<div class="col-sm-9">
 						<button ng-show="item.newItemStubParentType == 'array'" id="item.id+'_'" class="form-control text-left" ng-click="augmentList(item.path, item.template, dictKey)"><icon class="icon-plus text-primary"></icon></button>
-						<input ng-show="item.newItemStubParentType == 'object'" type="text" class="form-control" ng-model="dictKey" ng-enter="augmentList(item.path, item.template, dictKey)"/>
+						<input ng-show="item.newItemStubParentType == 'object'" placeholder="create {{item.title}}" type="text" class="form-control" ng-model="dictKey" ng-enter="augmentList(item.path, item.template, dictKey)" />
 					</div>					
 
 				</div>

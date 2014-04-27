@@ -717,16 +717,8 @@ angular.module('clidb',[])
 				// list items
 				else if (type == 'array' || type == 'object') {
 
-					if (!items) {
-						items = {type: 'string'};
-					}
-
-					if (items.$ref) {
-
-					}
-
 					// for objects we launch a new form, but  we have to call back to this one
-					if (items.type == 'object') {						
+					if (items && items.type == 'object') {						
 
 						for (var v in data[p]) {
 
@@ -751,8 +743,9 @@ angular.module('clidb',[])
 			
 						item = {
 							title: p,
+							foo:'bar',
 							index: v, 
-							type: items.type,
+							type: items ? items.type : null,
 							value: data[p][v], 
 							depth: depth,
 							id: idx++,
@@ -763,16 +756,18 @@ angular.module('clidb',[])
 					}
 
 					// a stub to add a new list item
-					item = {
-						title: p,
-						index: data[p].length,
-						id: idx++,
-						template: db.create(items),
-						newItemStubParentType: type,
-						depth: depth,
-						path: path.concat([p])
+					if (items) {
+						item = {
+							title: p,
+							index: data[p].length,
+							id: idx++,
+							template: db.create(items),
+							newItemStubParentType: type,
+							depth: depth,
+							path: path.concat([p])
+						}
+						result.push(item);
 					}
-					result.push(item);
 				}
 
 				else {
@@ -831,13 +826,15 @@ angular.module('clidb',[])
 
 	$scope.removeListItem = function(item) {
 		var loc = $scope.obj,
-			path = angula.copy(item.path);
+			path = angular.copy(item.path);
 		while (path.length > 1 && loc) {
 			loc = loc[path.shift()];
 		}
-		if (loc){
+		if (Array.isArray(loc)) {
 			loc[path.shift()] = null;
 			compressList(loc);
+		} else if (loc) {
+			delete loc[path.shift()];
 		}
 		$scope.items = parse($scope.schema, $scope.obj, 0);
 	}
