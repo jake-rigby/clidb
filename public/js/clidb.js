@@ -756,7 +756,7 @@ angular.module('clidb',[])
 					}
 
 					// a stub to add a new list item
-					if (items) {
+					if (items && data[p]) {
 						item = {
 							title: p,
 							index: data[p].length,
