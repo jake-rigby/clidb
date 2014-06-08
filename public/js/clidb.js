@@ -575,18 +575,12 @@ angular.module('clidb',[])
 	$scope.inpKeyDown = function(keyCode){
 
 		if (keyCode==38 && idx == list.length - 1) {
-
 			$scope.cmd = ''; 
 			idx = list.length;
-
 		} else if (keyCode==38 && idx < list.length - 1) {
-
 			$scope.cmd = $scope.commands[list[++idx]].cmd;
-
 		} else if (keyCode==40 && idx > 0) {
-
 			$scope.cmd = $scope.commands[list[--idx]].cmd;
-
 		}
 	}
 

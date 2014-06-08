@@ -95,11 +95,11 @@ module.exports.connect = function(namespace, redis) {
 		},
 		
 		deleteitem : function(classkey,itemkey,cb) {
-			redis.hlen(namespace+':'+classkey, function(err, len){
+			//redis.hlen(namespace+':'+classkey, function(err, len){
 				//if (len < 2) return; // <-- NEED TO DELETE THE CLASS NAME FROM THE CLASS SET
 				redis.hdel(namespace+':'+classkey, itemkey, cb); 
 				// redis.hgetall(namespace+':'+classkey, cb); // <-- this updates the remote cache (clidb.class.. is a TODO)
-			});
+			//});
 		},
 
 		export : function(classkey, path, cb) {
