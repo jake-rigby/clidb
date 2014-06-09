@@ -41,6 +41,8 @@
 		<script type="text/javascript" src="js/microbe.filters.js"></script>
 
 		<script type="text/javascript" src="js/clidb.js"></script>
+		<script type="text/javascript" src="js/clidb.controllers.js"></script>
+
 
 		<script type="text/javascript">
 
@@ -51,7 +53,8 @@
 				'microbe.services',
 				'microbe.controllers',
 				'microbe.filters',
-				'clidb'
+				'clidb',
+				'clidb.controllers'
 			])
 
 			.config(['$routeProvider',function($routeProvider){
@@ -63,7 +66,7 @@
 				
 				$routeProvider.when('/form:key:schema' , {
 					templateUrl : 'partials/form.html',
-					controller: 'clidb.FormController'
+					controller: 'clidb.JSONFormTypeOneController'
 				});
 				
 				$routeProvider.otherwise({redirectTo:'/console'});
