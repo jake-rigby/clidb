@@ -172,6 +172,15 @@ angular.module('clidb.controllers',[])
 		return result;
 	}
 
+	$scope.hrPath = function() {
+		var p = angular.copy($scope.path);
+		var result = '';
+		while (p.length) {
+			result += p.shift() + '&#8594';
+		}
+		return result;
+	}
+
 
 	$scope.editChild = function(schema, path) {
 		//db.api.set($scope.schemaName, $scope.key, $scope.root, $routeParams.qid);

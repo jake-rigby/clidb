@@ -323,7 +323,8 @@ angular.module('clidb',[])
 					linkCallback(err, result, qid);
 					//service.api.set(classkey, itemkey, result, qid);
 				}
-				$location.path('/form').search({schema:JSON.stringify(schema), schemaName:classkey, qid:qid});
+				$location.path('/form').search({schema:JSON.stringify(schema), schemaName:classkey, qid:qid, key:item.id});
+
 			}
 			else linkCallback(tv4.error ? tv4.error : schema ? null : 'schema not found', schema, qid);
 		},

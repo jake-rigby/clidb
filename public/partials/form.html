@@ -1,18 +1,22 @@
-<div class="container bg_d bd_lead_d lead_d ng-cloak" ng-show="error">
+<div class="container ng-cloak" ng-show="error">
 	<h1 class="text-center"> Bollocks... <p>{{error.message}}</p></h1>
 	<p class="text-center">(get outta here)</p>
 </div>
-<div class="container bg_d bd_lead_d lead_d ng-cloak padbottom" ng-show="!error">
+<div class="container ng-cloak padbottom" ng-show="!error">
 	
 	<div class="row pad">
 
-		<div class="col-sm-11">
-			<h1 class="text-bold">{{schemaName}} {{key}}
+		<div class="col-sm-11"> 
+			<h4 class="text-bold">{{key}}
+				<span ng-repeat="(i,el) in path" > 
+					<span ng-show="!(i%2)"> &#10140; {{el}}</span>
+					<span ng-show="(i%2)">: {{el}}</span>
+				</span>
 				<div class="pull-right">
 					<button class="btn btn-success btn-lg" ng-click="save()">done</button>
 					<button class="btn btn-default btn-lg" ng-click="cancel()">cancel</button>
 				</div>
-			</h1>
+			</h4>
 		</div>
 	</div>
 
@@ -77,7 +81,7 @@
 					</div>
 					
 					<!-- object editor -->
-					<div class="col-sm-9 " ng-show="item.type=='object'">
+					<div class="col-sm-9 " ng-show="item.type=='object'" style="cursor:pointer;">
 						<pre ng-click="editChild(item.schema, item.path)" class="">{{item.value}}</pre>
 					</div>
 					

@@ -27,12 +27,14 @@
 				{{user.displayName}}
 			</div>
 		</div>
-
-		<script type="text/javascript" src="lib/jq.js"></script> 
-		<script type="text/javascript" src="lib/bootstrap/js/bootstrap.js"></script>
 		
-		<script type="text/javascript" src="lib/angular-1.2.0-rc.2/angular-route.js"></script>
 		<script type="text/javascript" src="/socket.io/socket.io.js"></script>
+
+		<script type="text/javascript" src="lib/jq.js"></script>
+		<script type="text/javascript" src="lib/jquery-ui-1.10.4/js/jquery-ui-1.10.4.min.js"></script>
+		<script type="text/javascript" src="lib/bootstrap/js/bootstrap.js"></script>
+		<script type="text/javascript" src="lib/JSONedit/directives.js"></script>
+		<script type="text/javascript" src="lib/angular-1.2.0-rc.2/angular-route.js"></script>
 		<script type="text/javascript" src="lib/tv4/tv4.js"></script>
 
 		<!-- this app requires the microbe middleware to be present on the server, and the static content it contains to be provided -->
@@ -60,12 +62,12 @@
 			.config(['$routeProvider',function($routeProvider){
 
 				$routeProvider.when('/console' , {
-					templateUrl : 'partials/console.html',
+					templateUrl: 'partials/console.html',
 					controller: 'clidb.ConsoleController'
 				});
 				
-				$routeProvider.when('/form:key:schema' , {
-					templateUrl : 'partials/form.html',
+				$routeProvider.when('/form:key:schema:qid' , {
+					templateUrl: 'partials/form.html',
 					controller: 'clidb.JSONFormTypeOneController'
 				});
 				
