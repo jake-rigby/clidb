@@ -2,8 +2,8 @@
 
 angular.module('clidb',[])
 
-.factory('db', ['$rootScope', 'socket.io', '$http', '$location', 'editStore', 'utils',
-	function($rootScope, socketio, $http, $location, editStore, utils) {
+.factory('db', ['$rootScope', 'socket.io', '$http', '$location', 'editStore', 'utils', '$modal',
+	function($rootScope, socketio, $http, $location, editStore, utils, $modal) {
 	
 	/*
 	 * instances are cached in classes, directly accessible through the data object
@@ -323,7 +323,17 @@ angular.module('clidb',[])
 					linkCallback(err, result, qid);
 					//service.api.set(classkey, itemkey, result, qid);
 				}
-				$location.path('/form').search({schema:JSON.stringify(schema), schemaName:classkey, qid:qid, key:item.id});
+				if (false/*$modal*/) $modal.open({
+					templateUrl: 'partials/jsonModal.html',
+					controller: 'clidb.JSONFormTypeOneController',
+					resolve: {
+						schema:JSON.stringify(schema), 
+						schemaName:classkey, 
+						qid:qid, 
+						key:item.id
+					}
+				})
+				else $location.path('/form').search({schema:JSON.stringify(schema), schemaName:classkey, qid:qid, key:item.id});
 
 			}
 			else linkCallback(tv4.error ? tv4.error : schema ? null : 'schema not found', schema, qid);

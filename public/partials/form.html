@@ -1,24 +1,40 @@
+<style type="text/css">
+	
+	.navbar-fixed-top {
+		background-color:#ffffff; 
+		opacity:1;
+		border-bottom: #000000;
+	}
+
+	.vertical-centre {
+		margin:auto;
+	}
+</style>
+
 <div class="container ng-cloak" ng-show="error">
 	<h1 class="text-center"> Bollocks... <p>{{error.message}}</p></h1>
 	<p class="text-center">(get outta here)</p>
 </div>
-<div class="container ng-cloak padbottom" ng-show="!error">
-	
-	<div class="row pad">
 
-		<div class="col-sm-11"> 
-			<h4 class="text-bold">{{key}}
-				<span ng-repeat="(i,el) in path" > 
-					<span ng-show="!(i%2)"> &#10140; {{el}}</span>
-					<span ng-show="(i%2)">: {{el}}</span>
-				</span>
-				<div class="pull-right">
-					<button class="btn btn-success btn-lg" ng-click="save()">done</button>
-					<button class="btn btn-default btn-lg" ng-click="cancel()">cancel</button>
-				</div>
-			</h4>
-		</div>
+<div class="navbar navbar-fixed-top ">
+	<div class="container"><div class="row">
+	<div class="col-sm-12"> 
+		<span class="pull-left"><h4 class="pad">{{key}}
+			<span ng-repeat="(i,el) in path" > 
+				<span ng-show="!(i%2)"> &#10140; {{el}}</span>
+				<span ng-show="(i%2)">: {{el}}</span>
+			</span>
+		</h4></span>
+		<span class="pull-right">
+			<button class="btn btn-success btn-lg" ng-click="save()">done</button>
+			<button class="btn btn-default btn-lg" ng-click="cancel()">cancel</button>
+		</span>
 	</div>
+	</div></div>
+</div>
+
+<div class="container ng-cloak padbottom" ng-show="!error" style="margin-top: 100px;">
+	
 
 
 	<div class="form-horizontal" role="form">

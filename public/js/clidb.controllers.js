@@ -2,7 +2,7 @@ angular.module('clidb.controllers',[])
 
 .controller('clidb.JSONFormTypeOneController', ['$scope', '$routeParams', 'db', '$window', '$location', 'editStore',
 	function($scope, $routeParams, db, $window, $location, editStore) {
-
+	
 	var idx = 0;
 	
 	$scope.key = $routeParams.key;
