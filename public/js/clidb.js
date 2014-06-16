@@ -2,8 +2,8 @@
 
 angular.module('clidb',[])
 
-.factory('db', ['$rootScope', 'socket.io', '$http', '$location', 'editStore', 'utils', '$modal',
-	function($rootScope, socketio, $http, $location, editStore, utils, $modal) {
+.factory('db', ['$rootScope', 'socket.io', '$http', '$location', 'editStore', 'utils',
+	function($rootScope, socketio, $http, $location, editStore, utils) {
 	
 	/*
 	 * instances are cached in classes, directly accessible through the data object
@@ -117,7 +117,7 @@ angular.module('clidb',[])
 					if (err) {
 						if (cb) cb(err, null);
 						return abort();
-					}
+					} 
 					results[key] = result;
 					complete();
 				}, qid + i)
@@ -194,7 +194,7 @@ angular.module('clidb',[])
 
 		if (op && schm && tv4.validate(args, schm)) { // <-- won't validate zero alength arrays
 			
-			args.push(id); // <-- ??
+			args.push(id, cb); // <-- ??
 			op.apply(applyCommand, args);
 		
 		} else {
@@ -327,13 +327,20 @@ angular.module('clidb',[])
 					templateUrl: 'partials/jsonModal.html',
 					controller: 'clidb.JSONFormTypeOneController',
 					resolve: {
-						schema:JSON.stringify(schema), 
+						//schema:JSON.stringify(schema), 
+						//obj:JSON.stringify(item),
 						schemaName:classkey, 
 						qid:qid, 
 						key:item.id
 					}
 				})
-				else $location.path('/form').search({schema:JSON.stringify(schema), schemaName:classkey, qid:qid, key:item.id});
+				else $location.path('/form').search({
+					//schema:JSON.stringify(schema), 
+					//obj:JSON.stringify(item),
+					schemaName:classkey, 
+					qid:qid, 
+					key:item.id
+				});
 
 			}
 			else linkCallback(tv4.error ? tv4.error : schema ? null : 'schema not found', schema, qid);
@@ -554,8 +561,8 @@ angular.module('clidb',[])
 .factory('editStore', function() {
 
 	return {
-		schema: {},
-		obj: {},
+		schema: null,
+		obj: null,
 		cb: function(err, result) {
 			console.log('editStore default callback ',err, result);
 		}

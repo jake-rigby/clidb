@@ -1,10 +1,4 @@
 <style type="text/css">
-	
-	.navbar-fixed-top {
-		background-color:#ffffff; 
-		opacity:1;
-		border-bottom: #000000;
-	}
 
 	.vertical-centre {
 		margin:auto;
@@ -16,42 +10,36 @@
 	<p class="text-center">(get outta here)</p>
 </div>
 
-<div class="navbar navbar-fixed-top ">
-	<div class="container"><div class="row">
-	<div class="col-sm-12"> 
-		<span class="pull-left"><h4 class="pad">{{key}}
-			<span ng-repeat="(i,el) in path" > 
-				<span ng-show="!(i%2)"> &#10140; {{el}}</span>
-				<span ng-show="(i%2)">: {{el}}</span>
-			</span>
-		</h4></span>
-		<span class="pull-right">
-			<button class="btn btn-success btn-lg" ng-click="save()">done</button>
-			<button class="btn btn-default btn-lg" ng-click="cancel()">cancel</button>
-		</span>
-
+<div class="navbar navbar-fixed-top dark-grad">
+	<div class="container">
+		<div class="row pad">
+			<div class="col-sm-9">
+				<span class="btn btn-default text-lg" ng-click="back()"><b ng-show="path.length&gt;1">&lt;</b>
+					<b>{{key}}</b>
+					<span class="" ng-disabled="true">
+						
+							<span ng-repeat="(i,el) in path" > 
+								<span ng-show="!(i%2)"> &#8594; {{el}}</span>
+								<span ng-show="(i%2)">: {{el}}</span>
+							</span>
+						
+					</span>
+				</span>
+			</div>
+			<div class="col-sm-3">
+				<span class="pull-right">
+					<button class="btn btn-success" ng-click="save()">Save</button>
+					<button class="btn btn-default" ng-click="cancel()">Cancel</button>
+				</span>
+			</div>
+		</div>
 	</div>
-	</div></div>
 </div>
 
 <div class="container ng-cloak padbottom" ng-show="!error" style="margin-top: 100px;">
 	
 
-
 	<div class="form-horizontal" role="form">
-		<!--
-		<div class="col-xs-6">
-			Schema
-			<pre class="bg_d lead_d bd_bg_d">{{schema | pp}}</pre>
-		</div>
-
-		<div class="col-sm-3">
-			<div class="pad">
-				JSON
-				<pre class="bg_d lead_d bd_bg_d">{{obj | pp}}</pre>
-			</div>
-		</div>
-		-->
 
 		<ul class="col-sm-12">
 				
@@ -135,5 +123,18 @@
 
 
 	</div>
-
+	<!--
+	<div class="row">	
+		<div class="col-xs-12">
+			Schema
+			<pre class="bg_d lead_d bd_bg_d">{{schema | pp}}</pre>
+		</div>
+	</div>
+	<div class="row">
+		<div class="col-sm-12">
+			JSON
+			<pre class="bg_d lead_d bd_bg_d">{{obj | pp}}</pre>
+		</div>
+	</div>
+	-->
 </div>

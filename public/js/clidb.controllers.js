@@ -1,21 +1,30 @@
 angular.module('clidb.controllers',[])
 
-.controller('clidb.JSONFormTypeOneController', ['$scope', '$routeParams', 'db', '$window', '$location', 'editStore',
-	function($scope, $routeParams, db, $window, $location, editStore) {
+.controller('clidb.JSONFormTypeOneController', ['$scope', '$routeParams', 'db', '$window', '$location', 'editStore', '$rootScope',
+	function($scope, $routeParams, db, $window, $location, editStore, $rootScope) {
+
+	// if there is nothign in the editStore, the user probably refreshed - whatever, we need to go back to main page
+	if (!editStore.obj || !editStore.schema) {
+		$location.path('/flow-picker');
+		return;
+	}
+
 	
 	var idx = 0;
-	
+
+	var schemaHistory = [];
+
 	$scope.key = $routeParams.key;
 	$scope.schemaName = $routeParams.schemaName;
-	$scope.schema = $routeParams.schema ? JSON.parse($routeParams.schema) : editStore.schema;
+	$scope.schema = editStore.schema; //$routeParams.schema ? JSON.parse($routeParams.schema) : editStore.schema;
 	$scope.path = $routeParams.path;
-	$scope.root = editStore.obj;
-
+	$scope.root = editStore.obj; //$routeParams.obj ? JSON.parse($routeParams.obj) : editStore.obj;
+	
 	/*
 	 * crawl the root object to the given 'path'
 	 * or load the root as the edit target
 	 */
-	(function init() {
+	function init() {
 
 		if ($scope.path) {
 			var p = angular.copy($scope.path),
@@ -40,7 +49,27 @@ angular.module('clidb.controllers',[])
 		//	$scope.error = e;
 		//}
 
-	})();
+	};
+
+	init();
+	
+	// warn the user they will lose work if they refresh (TODO need to activate this only after edit)
+	$window.onbeforeunload = function(evt) {
+		var message = 'If you reload the page, your changes to the JSON object will be lost. Are you sure?';
+		if (typeof evt == 'undefined') {
+			evt = $window.event; // <-- user refreshes
+		} 
+		if (evt) {
+			evt.returnValue = message; // <-- user cancelled
+		}
+		return message;
+	}
+
+	// remove the reload warning if we leave the form editor - WARNING magic string!
+	$rootScope.$on("$routeChangeSuccess", function(event, current, previous) {
+		if (current.loadedTemplateUrl != 'partials/form.html' && previous.loadedTemplateUrl == 'partials/form.html')
+		$window.onbeforeunload = null;
+	})
 
 
 
@@ -172,23 +201,19 @@ angular.module('clidb.controllers',[])
 		return result;
 	}
 
-	$scope.hrPath = function() {
-		var p = angular.copy($scope.path);
-		var result = '';
-		while (p.length) {
-			result += p.shift() + '&#8594';
-		}
-		return result;
+	$scope.editChild = function(schema, path) {
+		schemaHistory.push($scope.schema);
+		$scope.schema = schema;
+		$scope.path = angular.copy(path);
+		init();
 	}
 
-
-	$scope.editChild = function(schema, path) {
-		//db.api.set($scope.schemaName, $scope.key, $scope.root, $routeParams.qid);
-		$location.path('/form').search({
-			key: $scope.key, 
-			schema: JSON.stringify(schema), 
-			schemaName: $scope.schemaName, 
-			path: angular.copy(path) } );
+	$scope.back = function() {
+		if ($scope.path.length < 2)  return;
+		$scope.path.pop();
+		$scope.path.pop();
+		$scope.schema = schemaHistory.pop();
+		init();
 	}
 
 	$scope.save = function() {
