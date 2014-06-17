@@ -209,7 +209,7 @@ angular.module('clidb.controllers',[])
 	}
 
 	$scope.back = function() {
-		if ($scope.path.length < 2)  return;
+		if ($scope.path.length < 2)  return $scope.save();
 		$scope.path.pop();
 		$scope.path.pop();
 		$scope.schema = schemaHistory.pop();

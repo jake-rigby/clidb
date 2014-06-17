@@ -12,23 +12,28 @@
 <div class="navbar navbar-fixed-top dark-grad">
 	<div class="container">
 		<div class="row pad">
-			<div class="col-sm-9">
-				<span class="btn btn-default text-lg" ng-click="back()"><b ng-show="path.length&gt;1">&lt;</b>
-					<b>{{schemaName}} : {{key}}</b>
-					<span class="" ng-disabled="true">
-						
-							<span ng-repeat="(i,el) in path" > 
-								<span ng-show="!(i%2)"> &#8594; {{el}}</span>
-								<span ng-show="(i%2)">: {{el}}</span>
-							</span>
-						
-					</span>
-				</span>
+			<div class="col-xs-2">
+				<div class="btn-group" ng-show="path.length&gt;1">
+					<span class="btn btn-default" ng-click="save()"><b>◄◄</b></span>
+					<span class="btn btn-default" ng-click="back()"><b>◄</b></span>
+				</div>
+				<span class="btn btn-default" ng-click="back()" ng-show="path.length&lt;2"><b>◄◄</b></span>
 			</div>
-			<div class="col-sm-3">
+			<div class="col-xs-7">
+				<span class="lead_d text-lg">
+					{{schemaName}} : {{key}}
+					
+						<span ng-repeat="(i,el) in path" > 
+							<span ng-show="!(i%2)"> &#8594; {{el}}</span>
+							<span ng-show="(i%2)">: {{el}}</span>
+						</span>
+					
+				</span>
+				
+			</div>
+			<div class="col-xs-3">
 				<span class="pull-right">
-					<button class="btn btn-success" ng-click="save()">Save</button>
-					<button class="btn btn-default" ng-click="cancel()">Cancel</button>
+					<button class="btn btn-default" ng-click="cancel()">Exit and revert</button>
 				</span>
 			</div>
 		</div>
