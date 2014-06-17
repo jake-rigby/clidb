@@ -501,7 +501,11 @@ angular.module('clidb',[])
 	socketio.on('clidb.item',function(err, classkey, itemkey, value, qid){
 		$rootScope.$apply(function() {
 			if (!service.data[classkey]) service.data[classkey] = {};
-			service.data[classkey][itemkey] = value;
+			try {
+				service.data[classkey][itemkey] = JSON.parse(value);
+			} catch (e) {
+				service.data[classkey][itemkey] = value;
+			}
 			if (qid) linkCallback(err, value, qid);
 		}, true);
 	});
