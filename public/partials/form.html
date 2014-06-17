@@ -6,8 +6,7 @@
 </style>
 
 <div class="container ng-cloak" ng-show="error">
-	<h1 class="text-center"> Bollocks... <p>{{error.message}}</p></h1>
-	<p class="text-center">(get outta here)</p>
+	<h1 class="text-center"> Oops... <p>{{error.message}}</p></h1>
 </div>
 
 <div class="navbar navbar-fixed-top dark-grad">
@@ -15,7 +14,7 @@
 		<div class="row pad">
 			<div class="col-sm-9">
 				<span class="btn btn-default text-lg" ng-click="back()"><b ng-show="path.length&gt;1">&lt;</b>
-					<b>{{key}}</b>
+					<b>{{schemaName}} : {{key}}</b>
 					<span class="" ng-disabled="true">
 						
 							<span ng-repeat="(i,el) in path" > 
