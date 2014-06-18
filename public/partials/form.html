@@ -3,6 +3,7 @@
 	.vertical-centre {
 		margin:auto;
 	}
+
 </style>
 
 <div class="container ng-cloak" ng-show="error">
@@ -12,20 +13,18 @@
 <div class="navbar navbar-fixed-top dark-grad">
 	<div class="container">
 		<div class="row pad">
-			<div class="col-xs-2">
+			<div class="col-xs-1">
 				<div class="btn-group" ng-show="path.length&gt;1">
-					<span class="btn btn-default" ng-click="save()"><b>◄◄</b></span>
 					<span class="btn btn-default" ng-click="back()"><b>◄</b></span>
 				</div>
-				<span class="btn btn-default" ng-click="back()" ng-show="path.length&lt;2"><b>◄◄</b></span>
 			</div>
-			<div class="col-xs-7">
-				<span class="lead_d text-lg">
-					{{schemaName}} : {{key}}
+			<div class="col-xs-8">
+				<span class="lead_d">
+					<b>{{schemaName}}</b> {{key}}
 					
 						<span ng-repeat="(i,el) in path" > 
-							<span ng-show="!(i%2)"> &#8594; {{el}}</span>
-							<span ng-show="(i%2)">: {{el}}</span>
+							<span ng-show="!(i%2)"> &#8594;<b>{{el}}</b></span>
+							<span ng-show="(i%2)"> {{el}}</span>
 						</span>
 					
 				</span>
@@ -33,7 +32,8 @@
 			</div>
 			<div class="col-xs-3">
 				<span class="pull-right">
-					<button class="btn btn-default" ng-click="cancel()">Exit and revert</button>
+					<button class="btn btn-default" ng-click="cancel()"><icon class="icon-rotate-left"></icon> cancel</button>
+					<span class="btn btn-success" ng-click="save()"><icon class="icon-save"></icon> save</span>
 				</span>
 			</div>
 		</div>
@@ -99,8 +99,13 @@
 						<input type="text" id="item.id" class="form-control" ng-model="obj[item.title][item.index]">
 					</div>
 					
-					<!-- remove array element -->
-					<div class="col-sm-1" ng-show="(item.index || item.index == 0)">
+					<!-- remove string array element -->
+					<div class="col-sm-1" ng-show="(item.index || item.index == 0) &amp;&amp; item.type!='object'">
+						<div><a ng-click="removeListItem(item)"><icon class="icon-remove"></icon></a></div>
+					</div>
+					
+					<!-- remove object array element -->
+					<div class="col-sm-1" ng-show="(item.index || item.index == 0) &amp;&amp; item.type=='object'">
 						<div><a ng-click="removeListItem(item)"><icon class="icon-remove"></icon></a></div>
 					</div>
 

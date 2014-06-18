@@ -242,14 +242,14 @@ angular.module('clidb',[])
 				if (s.properties[p].type=='object') r[p] = create(s.properties[p]);
 				else if (s.properties[p].type=='number') r[p] = 0;
 				else if (s.properties[p].type=='array') r[p] = create(s.properties[p]);
-				else if (s.properties[p].type=='string') r[p]= '-';
+				else if (s.properties[p].type=='string') r[p]= '';
 				else if (s.properties[p].$ref && tv4.getSchema(s.properties[p].$ref)) r[p] = create(tv4.getSchema(s.properties[p].$ref));
 				else r[p] = 'unknown : '+p;
 				//else if schemas[s.properties[p].type] r[p] = create(schemas[s.properties[p].type]); // <-- search referenced schemas here
 			}
 			return r
 		} 
-		else return '--';	
+		else return '';	
 	}
 
 	/*
@@ -281,7 +281,8 @@ angular.module('clidb',[])
 		},
 
 		dlt : function(classkey, itemkey, qid) {
-			service.data[classkey][itemkey] = null; // <-- remove locally
+			//service.data[classkey][itemkey] = null; // <-- remove locally
+			delete service.data[classkey][itemkey];
 			socketio.emit('clidb.deleteitem', classkey, itemkey, qid);
 		},
 

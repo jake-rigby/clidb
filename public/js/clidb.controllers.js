@@ -1,7 +1,7 @@
 angular.module('clidb.controllers',[])
 
-.controller('clidb.JSONFormTypeOneController', ['$scope', '$routeParams', 'db', '$window', '$location', 'editStore', '$rootScope',
-	function($scope, $routeParams, db, $window, $location, editStore, $rootScope) {
+.controller('clidb.JSONFormTypeOneController', ['$scope', '$routeParams', 'db', '$window', '$location', 'editStore', '$rootScope','$timeout',
+	function($scope, $routeParams, db, $window, $location, editStore, $rootScope, $timeout) {
 
 	// if there is nothign in the editStore, the user probably refreshed - whatever, we need to go back to main page
 	if (!editStore.obj || !editStore.schema) {
@@ -217,8 +217,10 @@ angular.module('clidb.controllers',[])
 	}
 
 	$scope.save = function() {
-		editStore.cb(null,  $scope.root);
-		$window.history.back();
+		db.exec('set', [$scope.schemaName, $scope.key, $scope.root], function(err, success) {
+			editStore.cb(null,  $scope.root);
+			$timeout(function(){$window.history.back();}, 100);
+		});
 	}
 	
 	$scope.cancel = function() {
@@ -251,7 +253,7 @@ angular.module('clidb.controllers',[])
 	}
 
 	$scope.removeListItem = function(item) {
-		var loc = $scope.obj,
+		var loc = $scope.root,
 			path = angular.copy(item.path);
 		while (path.length > 1 && loc) {
 			loc = loc[path.shift()];
@@ -262,7 +264,8 @@ angular.module('clidb.controllers',[])
 		} else if (loc) {
 			delete loc[path.shift()];
 		}
-		$scope.items = parse($scope.schema, $scope.obj, 0);
+		//$scope.items = parse($scope.schema, $scope.obj, 0);
+		init();
 	}
 
 	function compressList(source){
