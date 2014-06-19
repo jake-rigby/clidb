@@ -90,7 +90,7 @@ module.exports.connect = function(namespace, redis) {
 			redis.hgetall(namespace+':'+classkey,cb);
 		},
 
-		listclasses : function(classkey,cb) {
+		listclasses : function(cb) {
 			redis.smembers(namespace+':classes',cb);
 		},
 		

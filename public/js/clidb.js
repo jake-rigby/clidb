@@ -301,7 +301,7 @@ angular.module('clidb',[])
 		},
 
 		list : function(classkey, qid) {
-			socketio.emit('clidb.getclass', classkey, qid);
+			socketio.emit('clidb.listclasses', classkey, qid);
 		},
 
 		getclass : function(classkey, qid) {
@@ -411,11 +411,8 @@ angular.module('clidb',[])
 		},
 
 		list : function(err, result, id) {
-			var reply = [],
-				list = utils.parseJSONArray(result);
-			for (var key in list) reply.push(key);
 			editStore.obj = result;
-			service.commands[id].reply = reply;
+			service.commands[id].reply = result;
 			service.commands[id].err = err;
 		},
 
@@ -529,6 +526,13 @@ angular.module('clidb',[])
 	socketio.on('clidb.deleteitem', function(err, data, qid){
 		$rootScope.$apply(function(){
 			if (qid) linkCallback(err, data, qid);
+		}, true);
+	});
+
+
+	socketio.on('clidb.listclasses', function (err, result, qid) {
+		$rootScope.$apply(function(){
+			if (qid) linkCallback(err, result, qid);
 		}, true);
 	});
 

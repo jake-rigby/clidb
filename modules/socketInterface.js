@@ -63,6 +63,13 @@ module.exports.connect = function(namespace, redis, socket) {
 		});
 	});
 
+	socket.on('clidb.listclasses', function (qid) {
+		cli.listclasses(function (err, result) {
+			socket.emit('clidb.listclasses', err, result, qid);
+			if (err) console.log(err);
+		})
+	});
+
 	/**
 	 * Exports are saved to disk in the child /exports of the parent folder
 	 */

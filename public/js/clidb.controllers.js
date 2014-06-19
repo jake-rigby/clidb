@@ -280,7 +280,7 @@ angular.module('clidb.controllers',[])
 	}
 
 	$scope.loadRefs = function(item) {
-		db.exec('list', [item.ref], function(err, result) {
+		db.exec('getclass', [item.ref], function(err, result) {
 			item.refs = [];
 			for (var key in result) item.refs.push(key);
 		})
