@@ -35,10 +35,17 @@ angular.module('clidb.editor',[])
 ])
 
 
-.controller('ClassEditorController', ['$scope', '$routeParams', '$location', '$rootScope', 'db', '$modal', 'editStore',
-	function ($scope, $routeParams, $location, $rootScope, db, $modal, editStore) {
+.controller('ClassEditorController', ['$scope', '$routeParams', '$location', '$rootScope', 'db', '$modal', 'editStore', 'socket.io', 
+	function ($scope, $routeParams, $location, $rootScope, db, $modal, editStore, socketio) {
 
 		$scope.cls = $routeParams.clas;
+
+		$scope.schema = tv4.getSchema('#'+$scope.cls);
+
+		// a hack - if the user refreshes, and the schemas haven't loaded yet.. solve byu w3rapping tv4 in a service or directive
+		socketio.on('clidb.schema', function() {
+			$scope.schema = tv4.getSchema('#'+$scope.cls);
+		});
 
 		// tell the server what we want to update
 		db.exec('getclass', [$scope.cls]);
@@ -51,6 +58,11 @@ angular.module('clidb.editor',[])
 				$scope.items[items[item].id] = items[item].id;
 			}
 		}, true)
+
+		$scope.home = function () {
+
+			$location.path('/');
+		}
 
 		$scope.new = function () {
 			$modal.open({
