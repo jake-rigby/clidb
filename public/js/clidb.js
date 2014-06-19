@@ -575,56 +575,6 @@ angular.module('clidb',[])
 })
 
 
-/*
- * the console allows us to type expressions directly
- */
-.controller('clidb.ConsoleController',['$scope', 'db', function($scope, db) {
-
-	var idx = 0,
-		list = [],
-		inited = false;
-
-	$scope.submit = function(entry){
-		if (!entry) return;
-		var qid = db.eval(entry);
-		list.push(qid);
-		$scope.cmd = null;
-		idx = list.length;
-	}
-
-	/**
-	 * use  ng-keydown="inpKeyDown($event.keyCode)"
-	 */
-	$scope.inpKeyDown = function(keyCode){
-
-		if (keyCode==38 && idx == list.length - 1) {
-			$scope.cmd = ''; 
-			idx = list.length;
-		} else if (keyCode==38 && idx < list.length - 1) {
-			$scope.cmd = $scope.commands[list[++idx]].cmd;
-		} else if (keyCode==40 && idx > 0) {
-			$scope.cmd = $scope.commands[list[--idx]].cmd;
-		}
-	}
-
-	$scope.$watch(function(){
-		return db.commands;
-	},function(commands){
-		$scope.commands = commands;
-		list = [];
-		for (var key in commands) list.push(key);
-		list.sort();
-		if (!inited) {
-			$scope.cmd = ''; 
-			idx = list.length;
-		}
-		inited = true;
-	});
-
-
-}])
-
-
 .factory('utils', function() {
 
 	return {
