@@ -13,24 +13,28 @@
 <div class="container" style="margin-top: 130px;">
 
 	<div class="row">
-		<p class="text-lg text-muted">Choose a class to edit, or create a new one.</p>
 	</div>
 
 	<div class="row">
 		<div class="col-md-6">
+			<p class="text-lg text-muted">Choose a class to edit, or create a new one.</p>
 			<ul class="list-group pad">
 				<li ng-repeat="class in classes" class="list-group-item pad">
 					
 					<a ng-click="choose(class)">{{class}}</a><a class="">
 						
 				</li>
+				<!--
 				<li><hr></li>
 				<li><a ng-click="new()">Create new class...</a></li>
+				-->
 			</ul>
 		</div>
 		<div class="col-md-6">
-			<!-- maybe a nice picture ? -->	
-			<div class="text-center"><image src="http://lorempixel.com/g/400/400/" style="display:none;" onload="$(this).fadeIn();"></image></div>	
+			<!-- maybe a nice picture ? 
+			-->	
+			<div class="text-center"><image src="http://theoldreader.com/kittens/600/400/" style="display:none;" onload="$('#fadeincatcontainer').fadeIn(); $(this).fadeIn();"></image></div>
+			<p style="display:none;" id="fadeincatcontainer" class="text-muted">...I said CLASS not cat!</p>	
 		</div>
 	</div>
 </div>

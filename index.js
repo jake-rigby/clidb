@@ -3,3 +3,4 @@ module.exports.socket = require('./modules/socketInterface');
 module.exports.client = require('./modules/directInterface');
 module.exports.eval = require('./modules/expressionEvaluator');
 module.exports.provideContent = require('./modules/resourceLocation');
+module.exports.import = require('./modules/import');

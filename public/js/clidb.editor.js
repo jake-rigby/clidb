@@ -44,6 +44,8 @@ angular.module('clidb.editor',[])
 
 		// a hack - if the user refreshes, and the schemas haven't loaded yet.. solve byu w3rapping tv4 in a service or directive
 		socketio.on('clidb.schema', function() {
+
+			console.log(tv4.getSchemaUris());
 			$scope.schema = tv4.getSchema('#'+$scope.cls);
 		});
 
