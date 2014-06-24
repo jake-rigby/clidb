@@ -1,6 +1,6 @@
 'use-strict';
 
-angular.module('clidb',[])
+angular.module('clidb.services',[])
 
 .factory('db', ['$rootScope', 'socket.io', '$http', '$location', 'editStore', 'utils',
 	function($rootScope, socketio, $http, $location, editStore, utils) {
@@ -326,7 +326,7 @@ angular.module('clidb',[])
 				}
 				if (false/*$modal*/) $modal.open({
 					templateUrl: 'partials/jsonModal.html',
-					controller: 'clidb.JSONFormTypeOneController',
+					controller: 'ItemEditorController',
 					resolve: {
 						//schema:JSON.stringify(schema), 
 						//obj:JSON.stringify(item),
@@ -335,7 +335,7 @@ angular.module('clidb',[])
 						key:item.id
 					}
 				})
-				else $location.path('/form').search({
+				else $location.path('/item-editor').search({
 					//schema:JSON.stringify(schema), 
 					//obj:JSON.stringify(item),
 					schemaName:classkey, 

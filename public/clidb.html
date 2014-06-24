@@ -1,78 +1,113 @@
 <!DOCTYPE html>
-<html ng-app="clidb.consoleApp">
+<html ng-app="clidb-editor">
 	<head>
 
 		<meta charset="utf-8" />
 		<meta http-equiv="X-UA-Compatible" content="IE=9" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
-		<title>clidb</title>
+		<title>clidb class editor</title>
 		
 		<link rel="stylesheet" type="text/css" href="lib/bootstrap/css/bootstrap.min.css">
 		<link rel="stylesheet" type="text/css" href="lib/font-awesome/css/font-awesome.min.css">
 		<link rel="stylesheet" type="text/css" href="css/main.css">
 
-
 		<script type="text/javascript" src="lib/angular-1.2.0-rc.2/angular.js"></script>
 
 	</head>
 
-	<body class="bg_d bd_lead_d lead_d">
+	<body>
 
-		<div class="ng-view"></div>
+
+		<!-- main view container -->
+		<div ng-view ></div>
 		
-		<div ng-controller="UserController" class="navbar-fixed-bottom pad padright padleft bg_d ng-cloak">
-			<div class="pull-left ng-cloak">
-				<a href="/"><icom class="icon-home icon-2x"></icom></a>
+		<!-- footer -->
+		<div ng-controller="UserController" class="navbar-fixed-bottom pad padright padleft dark-grad">
+			<span class="lead_d">
 				{{user.displayName}}
-			</div>
+				<a ng-click="logout()">logout</a>
+			</span>
+			<span ng-controller="GuiSwitchController" class="pull-right">
+				<a title="terminal" href="#/{{gettarget()}}"><icon class="icon-{{geticon()}}"></icon></a></span>
+
 		</div>
 		
 		<script type="text/javascript" src="/socket.io/socket.io.js"></script>
-
-		<script type="text/javascript" src="lib/jq.js"></script>
-		<script type="text/javascript" src="lib/jquery-ui-1.10.4/js/jquery-ui-1.10.4.min.js"></script>
-		<script type="text/javascript" src="lib/bootstrap/js/bootstrap.js"></script>
-		<script type="text/javascript" src="lib/JSONedit/directives.js"></script>
+		<script type="text/javascript" src="lib/jq.js"></script> 
 		<script type="text/javascript" src="lib/angular-1.2.0-rc.2/angular-route.js"></script>
+		<script type="text/javascript" src="lib/ui-bootstrap-tpls-0.10.0.js"></script>
 		<script type="text/javascript" src="lib/tv4/tv4.js"></script>
 
-		<!-- this app requires the microbe middleware to be present on the server, and the static content it contains to be provided -->
 		<script type="text/javascript" src="js/microbe.services.js"></script>
 		<script type="text/javascript" src="js/microbe.controllers.js"></script>		
 		<script type="text/javascript" src="js/microbe.filters.js"></script>
-
-		<script type="text/javascript" src="js/clidb.js"></script>
+		<script type="text/javascript" src="js/clidb.services.js"></script>
 		<script type="text/javascript" src="js/clidb.controllers.js"></script>
-
+		<script type="text/javascript" src="js/clidb.directives.js"></script>
 
 		<script type="text/javascript">
+			
+			'use strict';
 
-		servicesRoot = '';
+			var servicesRoot = ''; 
 
-			angular.module('clidb.consoleApp',[
+			angular.module('clidb-editor',[
 				'ngRoute',
+				'ui.bootstrap',
 				'microbe.services',
 				'microbe.controllers',
-				'microbe.filters',
-				'clidb',
-				'clidb.controllers'
+				'microbe.filters', 
+				'clidb.services',
+				'clidb.controllers',
+				'clidb.directives'
 			])
 
 			.config(['$routeProvider',function($routeProvider){
 
-				$routeProvider.when('/console' , {
-					templateUrl: 'partials/console.html',
-					controller: 'clidb.ConsoleController'
+				$routeProvider.when('/class-chooser' , {
+					templateUrl : 'partials/class-chooser.html',
+					controller : 'ClassChooserController'
 				});
-				
-				$routeProvider.when('/form:key:schema:qid' , {
-					templateUrl: 'partials/form.html',
-					controller: 'clidb.JSONFormTypeOneController'
-				});
-				
-				$routeProvider.otherwise({redirectTo:'/console'});
 
+				$routeProvider.when('/class-editor' , {
+					templateUrl : 'partials/class-editor.html',
+					controller: 'ClassEditorController'
+				});
+
+				$routeProvider.when('/terminal' , {
+					templateUrl : 'partials/terminal.html',
+					controller: 'TerminalController'
+				});
+				
+				$routeProvider.when('/item-editor' , { // <-- schema name?
+					templateUrl : 'partials/item-editor.html',
+					controller: 'ItemEditorController' // <-- rename, include in editor module
+				});
+
+				$routeProvider.otherwise({redirectTo:'/class-chooser'});
+
+			}])
+
+			.controller('GuiSwitchController', ['$location', '$scope', function($location, $scope) {
+
+				$scope.gettarget = function() {
+					
+					if ($location.url().match('terminal')) {
+						return 'class-chooser';
+					} else {
+						return 'terminal';
+					}
+				};
+
+				$scope.geticon = function() {
+
+					if ($location.url().match('terminal')) {
+						return 'desktop';
+					} else {
+						return 'terminal';
+					}
+				};
 			}])
 
 		</script>
