@@ -262,7 +262,7 @@ angular.module('clidb.controllers',[])
 			for (var p in node.properties) {
 
 				var prop = node.properties[p];
-				if (prop.$ref) prop = tv4.getschema(prop.$ref); // <-- TODO catch errors
+				if (prop.$ref) prop = tv4.getSchema(prop.$ref); // <-- TODO catch errors
 
 				type = prop.type;
 				ref = prop.ref;
