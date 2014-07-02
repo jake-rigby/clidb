@@ -1,3 +1,16 @@
+
+function hlight(){
+	console.log('exec');
+
+	$('textarea').change(function() {
+		console.log('changing');
+		$('textarea').highlightTextarea({
+			words: ['agent', 'vulputate']
+		});
+	});
+}
+
+
 angular.module('clidb.controllers',[])
 
 
@@ -176,8 +189,8 @@ angular.module('clidb.controllers',[])
 ])
 
 
-.controller('ItemEditorController', ['$scope', '$routeParams', 'db', '$window', '$location', 'editStore', '$rootScope','$timeout',
-	function($scope, $routeParams, db, $window, $location, editStore, $rootScope, $timeout) {
+.controller('ItemEditorController', ['$scope', '$routeParams', 'db', '$window', '$location', 'editStore', '$rootScope', '$timeout', '$modal',
+	function($scope, $routeParams, db, $window, $location, editStore, $rootScope, $timeout, $modal) {
 
 	// if there is nothign in the editStore, the user probably refreshed - whatever, we need to go back to main page
 	if (!editStore.obj || !editStore.schema) {
@@ -218,12 +231,12 @@ angular.module('clidb.controllers',[])
 		var valid = tv4.validate($scope.obj, $scope.schema);
 		//console.log('validation results ', $scope.obj, $scope.schema, tv4.error, valid);
 
-		//try {
+		try {
 			$scope.items = parse($scope.schema, $scope.obj, 0, $scope.path);
-		//} catch (e) {
-		//	$scope.items = [];
-		//	$scope.error = e;
-		//}
+		} catch (e) {
+			$scope.items = [];
+			$scope.error = e;
+		}
 
 	};
 
@@ -374,7 +387,51 @@ angular.module('clidb.controllers',[])
 			}
 		}
 
+		hlight();
 		return result;
+	}
+
+
+	/**
+	 * edit a child property of $scope.obj
+	 */
+	$scope.editString = function (prop) {
+		$modal.open({
+			templateUrl: 'partials/edit-string.html', 
+			controller: 'editStringController',
+			resolve: {
+				name: function() {return 'Edit '+prop;},
+				value: function  () {return $scope.obj[prop];}
+			}
+		})
+		.result.then(function (result) {
+			
+			$scope.obj[prop] = result;
+		
+		}, function () {
+			// Modal dismissed cb
+		});
+	}
+
+	/**
+	 * edit an element of a child property of $scope.obj
+	 */
+	$scope.editArrayString = function (prop, key) {
+		$modal.open({
+			templateUrl: 'partials/edit-string.html', 
+			controller: 'editStringController',
+			resolve: {
+				value: function  () {return $scope.obj[prop][key];},
+				name: function () {return 'Edit '+prop+' : '+key}
+			}
+		})
+		.result.then(function (result) {
+			
+			$scope.obj[prop][key] = result;
+		
+		}, function () {
+			// Modal dismissed cb
+		});
 	}
 
 	$scope.editChild = function(schema, path) {
@@ -477,6 +534,7 @@ angular.module('clidb.controllers',[])
 	function($scope, $modalInstance, name, value){
 
 	$scope.value = value;
+	$scope.val = value;
 	$scope.name = name;
 
 	$scope.ok = function(newValue) {

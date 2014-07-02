@@ -4,13 +4,17 @@
 		margin:auto;
 	}
 
+	textarea {
+  		resize: none;
+	}
+
 </style>
 
 <div class="container ng-cloak" ng-show="error">
-	<h1 class="text-center"> Oops... <p>{{error.message}}</p></h1>
+	<h1 class="text-center" style="margin-top:25%;"> Oops... <p>{{error.message}}</p></h1>
 </div>
 
-<div class="navbar navbar-fixed-top dark-grad">
+<div class="dark-grad">
 	<div class="container">
 		<div class="row pad">
 			<div class="col-xs-12">
@@ -23,7 +27,7 @@
 					<span class="btn btn-default" ng-click="cancel()"><icon class="icon-rotate-left"></icon> cancel</span>
 					<span class="btn btn-success" ng-click="save()"><icon class="icon-save"></icon> save</span>
 				</span>
-				<span class="lead_d" style="margin-left:30px;">
+				<span class="lead_d text-lg" style="margin-left:30px;">
 					<b>{{schemaName}}</b> {{key}}					
 					<span ng-repeat="(i,el) in path" > 
 						<span ng-show="!(i%2)"> &#8594;<b>{{el}}</b></span>
@@ -35,7 +39,7 @@
 	</div>
 </div>
 
-<div class="container ng-cloak padbottom" ng-show="!error" style="margin-top: 100px;">
+<div class="container ng-cloak" ng-show="!error" style="margin-top: 50px; margin-bottom: 50px;">
 
 	<div class="form-horizontal" role="form">
 
@@ -69,7 +73,7 @@
 				</div>
 				
 				<!-- string -->
-				<div ng-show="!item.ref &amp;&amp; !item.newItemStubParentType" class="form-group">
+				<div ng-show="!item.ref &amp;&amp; !item.newItemStubParentType &amp;&amp; item.title!='id'" class="form-group">
 					
 					<!-- field label -->
 					<label for="item.id" class="col-sm-2 control-label">
@@ -80,7 +84,11 @@
 					
 					<!-- string editor -->
 					<div class="col-sm-9" ng-show="!(item.index || item.index == 0) &amp;&amp; item.type!='object'">
-						<input type="{{item.type}}" id="item.id" class="form-control" ng-model="obj[item.title]" >
+						<!-- use a modal? nah -->
+						<!--textarea type="{{item.type}}" id="item.id" class="form-control" ng-click="editString(item.title)">{{obj[item.title]}}</textarea-->
+						<textarea type="{{item.type}}" spellcheck="false" id="item.id" class="form-control htext" ng-model="obj[item.title]" ng-show="item.title!='id'"></textarea>
+						<!-- don't allow editing the id-->
+						<div id="item.id" class="form-control" ng-show="item.title=='id'" style="border-color: white;">{{obj[item.title]}}</div>
 					</div>
 					
 					<!-- object editor -->
@@ -90,7 +98,8 @@
 					
 					<!-- array string element editor -->
 					<div class="col-sm-9" ng-show="(item.index || item.index == 0) &amp;&amp; item.type!='object'">
-						<input type="text" id="item.id" class="form-control" ng-model="obj[item.title][item.index]">
+						<!--textarea type="text" id="item.id" class="form-control" ng-click="editArrayString(item.title, item.index)" style="overflow:hidden;">{{obj[item.title][item.index]}}</textarea-->
+						<textarea type="text" spellcheck="false" id="item.id" class="form-control htext" ng-model="obj[item.title][item.index]"></textarea>
 					</div>
 					
 					<!-- remove string array element -->
