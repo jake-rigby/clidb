@@ -1,16 +1,3 @@
-
-function hlight(){
-	console.log('exec');
-
-	$('textarea').change(function() {
-		console.log('changing');
-		$('textarea').highlightTextarea({
-			words: ['agent', 'vulputate']
-		});
-	});
-}
-
-
 angular.module('clidb.controllers',[])
 
 
@@ -29,7 +16,7 @@ angular.module('clidb.controllers',[])
 	}
 
 	/**
-	 * use  ng-keydown="inpKeyDown($event.keyCode)"
+	 * use: ng-keydown="inpKeyDown($event.keyCode)"
 	 */
 	$scope.inpKeyDown = function(keyCode){
 
@@ -387,7 +374,6 @@ angular.module('clidb.controllers',[])
 			}
 		}
 
-		hlight();
 		return result;
 	}
 
