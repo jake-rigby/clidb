@@ -61,9 +61,10 @@ module.exports = function(db) {
 			for (var r in replace) {		
 				(function(inner, outer) {
 					service.eval(inner, function(err, result) {
+						console.log('[ExpressionEvaluator] result',result,err);
 						if (err) {
 							if (cb) cb(err, null);
-							return abort();
+							return abort(err);
 						}
 						x = x.replace(new RegExp(outer, "g"), result);
 						delete replace[inner];
@@ -79,10 +80,11 @@ module.exports = function(db) {
 		} catch (e) {
 
 			cb(e, null);
-			return abort();
+			return abort(e);
 		}
 
-		function abort() {
+		function abort(err) {
+			console.log('clidb [RESOLVE_TO_STRING] abort', err);
 			var aborted = true;
 		}
 		
@@ -124,7 +126,7 @@ module.exports = function(db) {
 					inners[index] = undefined;
 					if (err) {
 						if (callback) callback(err, null);
-						return abort();
+						return abort(err);
 					}
 					results[key] = result;
 					complete();
@@ -158,7 +160,8 @@ module.exports = function(db) {
 
 		complete();
 
-		function abort() {
+		function abort(err) {
+			console.log('clidb [EVAL] abort', err);
 			var aborted = true;
 		}
 
