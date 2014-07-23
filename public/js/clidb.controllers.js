@@ -3,6 +3,8 @@ angular.module('clidb.controllers',[])
 
 .controller('TerminalController',['$scope', 'db', function($scope, db) {
 
+	db = db('/'); // must define the namespace for a db instance in each injection (its still a singleton-per-ns)
+
 	var idx = 0,
 		list = [],
 		inited = false;
@@ -49,6 +51,8 @@ angular.module('clidb.controllers',[])
 
 .controller('ClassChooserController', ['$scope', '$location', 'db',
 	function($scope, $location, db) {
+
+		db = db('/'); // must define the namespace for a db instance in each injection (its still a singleton-per-ns)
 		
 		db.exec('list', [], function(err, result) {
 
@@ -65,6 +69,8 @@ angular.module('clidb.controllers',[])
 
 .controller('ClassEditorController', ['$scope', '$routeParams', '$location', '$rootScope', 'db', '$modal', 'editStore', 'socket.io', '$window', 
 	function ($scope, $routeParams, $location, $rootScope, db, $modal, editStore, socketio, $window) {
+
+		db = db('/'); // must define the namespace for a db instance in each injection (its still a singleton-per-ns)
 
 		$scope.cls = $routeParams.clas;
 
@@ -178,6 +184,8 @@ angular.module('clidb.controllers',[])
 
 .controller('ItemEditorController', ['$scope', '$routeParams', 'db', '$window', '$location', 'editStore', '$rootScope', '$timeout', '$modal',
 	function($scope, $routeParams, db, $window, $location, editStore, $rootScope, $timeout, $modal) {
+
+	db = db('/'); // must define the namespace for a db instance in each injection (its still a singleton-per-ns)
 
 	// if there is nothign in the editStore, the user probably refreshed - whatever, we need to go back to main page
 	if (!editStore.obj || !editStore.schema) {
