@@ -100,7 +100,6 @@ angular.module('clidb.services',[])
 				completed = false;
 
 			if (!qid) qid = Date.now();
-			// service.commands[qid] = {cmd: str, idx: qid};
 
 			var inners = utils.extractSectionsinCurlys(x),
 				replacers = utils.extractSectionsinCurlys(x, true),
@@ -454,7 +453,7 @@ angular.module('clidb.services',[])
 				service.commands[id].err = err;			
 			},
 
-			commit : function(err, result, id) {
+			export : function(err, result, id) {
 				service.commands[id].reply = result;
 				service.commands[id].err = err;						
 			}
@@ -484,7 +483,7 @@ angular.module('clidb.services',[])
 		});
 		
 
-		socket.on('clidb.all',function(err, data){
+		socket.on('clidb.getall',function(err, data){
 			$rootScope.$apply(function(){
 				service.data = {};
 				for (var c in data) service.data[c] = utils.parseJSONArray(data[c]);

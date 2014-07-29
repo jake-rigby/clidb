@@ -1,10 +1,3 @@
-
-/**
- TODO
-
- MAKE THIS A UTILITY OF THE CLIDB PROJECT
- */
-
 var tv4 = require('tv4');
 tv4.addSchema(require('../public/schemas/api'));
 
@@ -61,7 +54,6 @@ module.exports = function(db) {
 			for (var r in replace) {		
 				(function(inner, outer) {
 					service.eval(inner, function(err, result) {
-						console.log('[ExpressionEvaluator] result',result,err);
 						if (err) {
 							if (cb) cb(err, null);
 							return abort(err);
@@ -161,7 +153,6 @@ module.exports = function(db) {
 		complete();
 
 		function abort(err) {
-			console.log('clidb [EVAL] abort', err);
 			var aborted = true;
 		}
 
