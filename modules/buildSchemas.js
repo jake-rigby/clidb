@@ -1,23 +1,37 @@
-/**
- * @author Jake Rigby
- *
- * Build a redis transaction to add a bunch of json schemas to 
- * the db, hashed by a unique ns and their id
- */
-var tv4 = require('tv4');
+var fs = require('fs'),
+	path = require('path'),
+	tv4 = require('tv4');
 
-module.exports = function(namespace, redis, schemas, cb) {
-	var m = redis.multi();
-	for (var s in schemas) {
-		var obj = schemas[s];
-		if (!obj.id || !obj.$schema) continue;
-		var id = obj.id.substring(1);
-		//m.hset(namespace+':clidb:schema', id, JSON.stringify(obj));
-		tv4.addSchema(obj);
-		console.log('[CLIDB BUILDER] add schema --> ',id);
-		//console.log(obj.definitions.episode ? obj.definitions.episode.properties.actions : obj);
+module.exports = function(namespace, redis) {
+
+	var api = {
+
+		file : function (filePath) {
+
+			try {
+				if (path.extname(filePath) != '.json') throw 'The class file should be JSON'
+
+				var schema = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+				tv4.addSchema(schema);
+				//redis.hset(namespace+':clidb:schema', id, JSON.stringify(schema));
+				console.log('[CLIDB BUILD_SCHEMA] schema added', schema.id);
+
+			} catch (e) {
+
+				console.log('[CLIDB ERROR] importClass', e);
+			}	
+		},
+
+		directory : function(dirpath) {
+
+			var files = fs.readdirSync(dirpath);
+
+			for (var f in files) {
+
+				this.file(path.join(dirpath,files[f]));
+			}
+		}
 	}
-	m.exec(function(err,replies) {
-		if (cb) cb(err, replies);
-	});
+
+	return api;
 }

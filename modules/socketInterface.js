@@ -74,7 +74,7 @@ module.exports.connect = function(namespace, redis, socket) {
 	 * Exports are saved to disk in the child /exports of the parent folder
 	 */
 	socket.on('clidb.export', function(classkey, qid) {
-		cli.export(classkey, '../exports/'+classkey+'.json', function(err, result) {
+		cli.export(classkey, './exports/'+classkey+'.json', function(err, result) {
 			socket.emit('clidb.export', err, classkey, !err, qid);
 			if (err) console.log(err);
 		})
