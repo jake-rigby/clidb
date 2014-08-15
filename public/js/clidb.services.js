@@ -2,8 +2,8 @@
 
 angular.module('clidb.services',[])
 
-.factory('db', ['$rootScope', 'socket.io', '$http', '$location', 'editStore', 'utils',
-	function($rootScope, socketio, $http, $location, editStore, utils) { // <-- now we're using namespaces, editStore could be an issue
+.factory('db', ['$rootScope', 'socket.io.ns', '$http', '$location', 'editStore', 'utils',
+	function($rootScope, socketions, $http, $location, editStore, utils) { // <-- now we're using namespaces, editStore could be an issue
 
 	// an inner, true factory that will produce singleton, namespaced db instances (see bottom of the statement)
 	function newDb(socket) {
@@ -573,7 +573,7 @@ angular.module('clidb.services',[])
 	// get an instance
 	return function get(ns) {
 
-		if (!dbs[ns]) dbs[ns] = newDb(socketio.get(ns));
+		if (!dbs[ns]) dbs[ns] = newDb(socketions.get(ns));
 		return dbs[ns];
 	}	
 
